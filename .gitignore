@@ -1,0 +1,7 @@
+# GIT ignore file
+
+# development backup files
+bak/
+
+# claude.ai origin hash
+origin.txt
