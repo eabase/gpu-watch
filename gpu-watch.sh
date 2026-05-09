@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------------
 # Author	: eabase
 # Date		: 2026-05-09
-# Version	: 1.0.0
+# Version	: 1.0.1
 # Repo 		: https://github.com/eabase/gpu-watch
 #
 #------------------------------------------------------------------------------
@@ -59,6 +59,7 @@ BOLD="\033[1m"
 C_TIME="\033[38;5;240m"
 C_IDX="\033[38;5;75m"
 C_BLUE="\033[38;5;75m"
+C_LGRY="\033[0;37m"		# [38;5;37m --or-- [0;37m  --or-- [1;37m
 C_OK="\033[38;5;82m"
 C_WARN="\033[38;5;208m"
 C_CRIT="\033[38;5;196m"
@@ -131,6 +132,18 @@ GPU_COUNT=$(nvidia-smi --query-gpu=index --format=csv,noheader 2>/dev/null | wc 
 [ "$GPU_COUNT" -lt 1 ] && GPU_COUNT=1
 
 
+# Make a box for the Legend
+legend_box() {
+    local W=42
+    printf "${C_SEP}┌$(seg $((W)))┐${RESET}\n"
+    printf "${C_SEP}│${RESET} ${C_HDR}GPU   [%%]   ${C_BLUE}● <80${RESET}    ${C_WARN}● 80–95${RESET}   ${C_CRIT}● >95${RESET}     ${C_SEP}│${RESET}\n"
+    printf "${C_SEP}│${RESET} ${C_HDR}VRAM  [%%]   ${C_OK}● <80${RESET}    ${C_WARN}● 80–95${RESET}   ${C_CRIT}● ≥95${RESET}     ${C_SEP}│${RESET}\n"
+    printf "${C_SEP}│${RESET} ${C_HDR}TEMP  [°C]  ${C_OK}● <70${RESET}    ${C_WARN}● 70–86${RESET}   ${C_CRIT}● >86${RESET}     ${C_SEP}│${RESET}\n"
+    printf "${C_SEP}│${RESET} ${C_HDR}POWER [W]   ${C_OK}● <80${RESET}    ${C_WARN}● 80–100${RESET}  ${C_CRIT}● >100${RESET}    ${C_SEP}│${RESET}\n"
+    printf "${C_SEP}└$(seg $((W)))┘${RESET}\n"
+}
+
+
 # ── Print blank placeholder rows + footer + legend (printed once) ─────────────
 
 print_bottom_frame() {
@@ -141,12 +154,9 @@ print_bottom_frame() {
     done
     hline └ ┴ ┘
     printf "\n"
-    printf "  ${C_HDR}GPU%%    ${C_BLUE}● <80%%${RESET}    ${C_WARN}● 80–95%%${RESET}   ${C_CRIT}● >95%%${RESET}\n"
-    printf "  ${C_HDR}VRAM    ${C_OK}● <80%%${RESET}    ${C_WARN}● 80–95%%${RESET}   ${C_CRIT}● ≥95%%${RESET}\n"
-    printf "  ${C_HDR}TEMP    ${C_OK}● <70°C${RESET}   ${C_WARN}● 70–86°C${RESET}  ${C_CRIT}● >86°C${RESET}\n"
-    printf "  ${C_HDR}POWER   ${C_OK}● <80W${RESET}    ${C_WARN}● 80–100W${RESET}  ${C_CRIT}● >100W${RESET}\n"
+	legend_box
     printf "\n"
-    printf "  ${C_HDR}Press ${BOLD}[Ctrl-C]${RESET}${C_HDR} to exit.${RESET}\n"
+    printf "  ${C_HDR}Press ${C_LGRY}[Ctrl-c]${RESET}${C_HDR} to exit.${RESET}\n"
 }
 
 # Lines from cursor (after last header hline) to get back up to row N (0-indexed)
@@ -155,7 +165,8 @@ print_bottom_frame() {
 # After printing all GPU_COUNT rows + footer + legend lines, we need to go back up.
 # Total lines below the ├ separator:
 #   GPU_COUNT data rows + 1 (└) + 1 (blank) + 4 legend + 1 (blank) + 1 exit = GPU_COUNT + 8
-LINES_BELOW=$(( GPU_COUNT + 8 ))
+#LINES_BELOW=$(( GPU_COUNT + 8 ))	# Without legend_box()
+LINES_BELOW=$(( GPU_COUNT + 10 ))	# With legend_box()
 
 
 # ── Overwrite a single data row in place ──────────────────────────────────────
