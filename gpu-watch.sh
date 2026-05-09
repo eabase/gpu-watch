@@ -38,6 +38,14 @@
 #
 #	./gpu-watch.sh <interval_seconds>   (default: 2)
 #
+# For additional items:
+#
+#	nvidia-smi --help-query-gpu | grep --color=always -iE '^".+$|$' -A5
+#	nvidia-smi --query-gpu=timestamp,index,utilization.gpu,memory.used,\
+#		memory.reserved,memory.total,memory.free,temperature.gpu,power.draw,power.max_limit,c2c.mode,\
+#		mig.mode.pending,compute_mode,pstate,kmd_version,serial,persistence_mode,addressing_mode,\
+#		accounting.mode,inforom.img,vbios_version
+#
 # Having issues?
 #
 #	- File bugreport or make a PR to repo
