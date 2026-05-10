@@ -202,13 +202,13 @@ gpu_color()   { local g=${1%.*}
 
 # ── Column widths ──────────────────────────────────────────────────────────────
 
-W_TIME=11
-W_GPU=7
-W_PSTATE=8
-W_UTIL=8
-W_VRAM=24
+W_TIME=10   # 11
+W_GPU=4     # 7
+W_PSTATE=5  # 8
+W_UTIL=7    # 8
+W_VRAM=24   # 24    fails on 22
 W_TEMP=9
-W_PWR=19
+W_PWR=19    # 19   fails on 17
 
 # ── Box drawing ────────────────────────────────────────────────────────────────
 
@@ -238,7 +238,7 @@ print_static_frame() {
     printf "\033c"   
     printf "${C_HDR}  ⬡  GPU Monitor  ${RESET}${C_SEP}—  ${C_HDR}refresh every %ss${RESET}\n\n" "$INTERVAL"
     hline ┌ ┬ ┐
-    hrow     "TIME"       "GPU#" "pSTATE"  "GPU [%]"  "VRAM [MiB]"        "TEMP [°C]" "POWER [W]"
+    hrow     "TIME"       "GPU#" "STATE"  "GPU [%]"  "VRAM [MiB]"        "TEMP [°C]" "POWER [W]"
     hrow_dim "[HH:MM:SS]" ""     ""       ""          "used/total (free)" ""          "draw/max"
     hline ├ ┼ ┤
 }
