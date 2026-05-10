@@ -59,12 +59,22 @@
 #	- None for Bash AFAIK
 #	- https://github.com/lablup/all-smi		# Super nice Rust based nvtop-styled replacement of nvidia-smi
 # 
+#------------------------------------------------------------------------------
+# NOTES
+#   
+#   The Bash shellcheck testing have issues with this script as: 
+#   - it depends on using inline variables within printf()
+#   - it uses multiple commands on one line, while shellcheck is only able to check one command at the time.
+#   - Some variables are placeholders for ToDo items.
+#   
 # ToDo:
+#   - [ ] Move this list into repo issue or README file.
 #   - [x] Separate out BAR_COLOR and use only one percentBar() line in print_vram_bar()
-#   - [-] Add automatic detection of GPU Max power level in get_card_powers() - Already obtained in pull()!
+#   - [-] Add automatic detection of GPU Max power level in get_card_powers() - Already obtained in poll()!
 #   - [x] Add automatic detection of GPU Max clock rate in get_card_powers()
-#   - [ ] Fix colors of data line for newly added (pstate) column items
-#   - [ ] Move VRAM "progress" bar into VRAM cell (need 2 lines) using a "thin line" UTF-8 character (`\U258?`)`
+#   - [ ] Add column for current SM clock rate.
+#   - [-] Fix colors of data line for newly added (pstate) column items
+#   - [ ] Move VRAM "progress" bar into VRAM cell (need 2 lines) using a "thin line" UTF-8 character (`\U258?`)
 #
 # References:
 #
@@ -88,7 +98,7 @@ INTERVAL=${1:-2}
 # ── ANSI colors ────────────────────────────────────────────────────────────────
 
 RESET="\033[0m"             # 
-BOLD="\033[1m"              # 
+#BOLD="\033[1m"              # 
 C_TIME="\033[38;5;240m"     # 
 C_IDX="\033[38;5;75m"       # BrightBlue ?
 C_BLUE="\033[38;5;75m"      # BrightBlue ?
@@ -111,7 +121,7 @@ C_SEP="\033[38;5;237m"      #
 VP_RED='\e[0;31m'       # Red
 VP_GRN='\e[0;32m'       # Green
 VP_ORA='\e[0;33m'       # Orange
-VP_LGR='\e[0;37m'       # Light Gray
+#VP_LGR='\e[0;37m'       # Light Gray
 #VP_DGR="\e[0;37m"       # Dark Gray
 
 #── Global Variables ──────────────────────────────────────
@@ -169,6 +179,7 @@ print_vram_bar () {
     elif [ "$p" -gt 70 ]; then color="$VP_ORA"
     else                       color="$VP_GRN"
     fi
+    # shellcheck disable=SC2154     # unassigned variable
     percentBar "$p" $BARWIDTH bar; printf '\r '"$color"'\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" "$p"
 }
 
@@ -253,8 +264,8 @@ GPU_COUNT=$(nvidia-smi --query-gpu=index --format=csv,noheader 2>/dev/null | wc 
 # ── Make a box for the Legend ─────────────────────────────────────────────────
 
 legend_box() {
-    # shellcheck disable=SC2059
     local W=42
+    # shellcheck disable=SC2059
     printf "${C_SEP}┌$(seg $((W)))┐${RESET}\n"
     printf "${C_SEP}│${RESET} ${C_HDR}GPU   [%%]   ${C_BLUE}● <80${RESET}    ${C_WARN}● 80–95${RESET}   ${C_CRIT}● >95${RESET}     ${C_SEP}│${RESET}\n"
     printf "${C_SEP}│${RESET} ${C_HDR}VRAM  [%%]   ${C_OK}● <80${RESET}    ${C_WARN}● 80–95${RESET}   ${C_CRIT}● ≥95${RESET}     ${C_SEP}│${RESET}\n"
