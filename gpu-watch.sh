@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
-# gpu-watch.sh — Pretty nvidia-smi monitor
+# gpu-watch.sh — A prettyfied nvidia-smi GPU monitor in bash
 #------------------------------------------------------------------------------
 # Author	: eabase
 # Date		: 2026-05-10
-# Version	: 1.0.3
+# Version	: 1.0.4
 # Repo 		: https://github.com/eabase/gpu-watch
 #
 #------------------------------------------------------------------------------
 #
 # Description:
 #
-#	A bash based prettyfier wrapper for nvidia-smi.
+#	A minimalistic bash-based colored prettyfier wrapper for nvidia-smi and CLI use.
 #
 # OOB Compatibility:
 #
 #	- Windows-11 + MSYS/MINGW64 (bash shell)
-#	- NVIDIA GeForce RTX 4070 Mobile
-#	  https://www.techpowerup.com/gpu-specs/geforce-rtx-4070-mobile.c3944
+#	- NVIDIA GeForce RTX 4070 Mobile [1]
 #
 # Features:
 #
@@ -28,7 +27,7 @@
 # Required GPU Customisation:
 #
 # 	Your graphics card or GPU is different from what this script was designed for,
-#	so you need to find out and adjust the following:
+#	so you need to manuall find-out and adjust the following:
 #
 #	- Max Temperature (before GPU throttling)
 #	- Max Power draw
@@ -37,6 +36,11 @@
 # Usage:
 #
 #	./gpu-watch.sh <interval_seconds>   (default: 2)
+#
+# Useful nvidia-smi commands:
+#
+#   nvidia-smi -q -d CLOCK
+#   nvidia-smi -q -d POWER
 #
 # For additional items:
 #
@@ -48,43 +52,100 @@
 #
 # Having issues?
 #
-#	- File bugreport or make a PR to repo
+#	- File bugreport and/or make a PR to repo
 #
 # Similar Projects:
 #
-#	- https://github.com/lablup/all-smi		# Super nice Rust replacement of nvidia-smi
-#	- None for bash AFAIK
+#	- None for Bash AFAIK
+#	- https://github.com/lablup/all-smi		# Super nice Rust based nvtop-styled replacement of nvidia-smi
+# 
+# ToDo:
+#   - [x] Separate out BAR_COLOR and use only one percentBar() line in print_vram_bar()
+#   - [-] Add automatic detection of GPU Max power level in get_card_powers() - Already obtained in pull()!
+#   - [x] Add automatic detection of GPU Max clock rate in get_card_powers()
+#   - [ ] Fix colors of data line for newly added (pstate) column items
+#   - [ ] Move VRAM "progress" bar into VRAM cell (need 2 lines) using a "thin line" UTF-8 character (`\U258?`)`
+#
+# References:
+#
+#   [1] https://www.techpowerup.com/gpu-specs/geforce-rtx-4070-mobile.c3944
+#   [2] 
+#   [3] https://www.shellcheck.net/
+#   [4] https://github.com/koalaman/shellcheck
+#   [5] 
+#   [6] 
 #
 #------------------------------------------------------------------------------
 
+# ── Init / Setup ─────────────────────────────────────────────────────────────
+
+DEBUG=0
+
+# Update interval as option.  Default: 2 seconds. 
+# But this is not accurate, due to bash script latency!
 INTERVAL=${1:-2}
 
 # ── ANSI colors ────────────────────────────────────────────────────────────────
 
-RESET="\033[0m"
-BOLD="\033[1m"
-C_TIME="\033[38;5;240m"
-C_IDX="\033[38;5;75m"
-C_BLUE="\033[38;5;75m"
-C_LGRY="\033[0;37m"		# [38;5;37m --or-- [0;37m  --or-- [1;37m
-C_OK="\033[38;5;82m"
-C_WARN="\033[38;5;208m"
-C_CRIT="\033[38;5;196m"
-C_HDR="\033[38;5;245m"
-C_SEP="\033[38;5;237m"
+RESET="\033[0m"             # 
+BOLD="\033[1m"              # 
+C_TIME="\033[38;5;240m"     # 
+C_IDX="\033[38;5;75m"       # BrightBlue ?
+C_BLUE="\033[38;5;75m"      # BrightBlue ?
+C_LGRY="\033[0;37m"		    # [38;5;37m --or-- [0;37m  --or-- [1;37m
+C_OK="\033[38;5;82m"        # 
+C_WARN="\033[38;5;208m"     # 
+C_CRIT="\033[38;5;196m"     # 
+C_HDR="\033[38;5;245m"      # 
+C_SEP="\033[38;5;237m"      # 
 
-# ── Helper Files (Progress Bar) ────────────────────────────────────────────────
+# ── Helper Functions (Progress Bar) ────────────────────────────────────────────
 
-#----------------------------------------------------------
-# Global Variables
-#----------------------------------------------------------
+#── Shellcheck Disabled ──────────────────────────────────────
+# shellcheck disable=SC2059     # Using variables in the printf
+# shellcheck disable=SC2034     # ToDo Use Unused variables 
 
-let VRAMP=0	# VRAM percentage (to be used in) print_vram_bar
+#── ANSI Color Codes ──────────────────────────────────────
 
+# Here we use 'ESC=\e' for readability, but if this fails on your OS, use: '\033' (Oct) or '\x1b' (Hex).
+VP_RED='\e[0;31m'       # Red
+VP_GRN='\e[0;32m'       # Green
+VP_ORA='\e[0;33m'       # Orange
+VP_LGR='\e[0;37m'       # Light Gray
+#VP_DGR="\e[0;37m"       # Dark Gray
 
-#----------------------------------------------------------
-# Helper Functions
-#----------------------------------------------------------
+#── Global Variables ──────────────────────────────────────
+
+# VRAM percentage set (exported) in update_row() and used in update_vram_bar()
+#let VRAMP=0	
+((VRAMP=0))
+((MAX_POWER=0))
+((MAX_SM_CLOCK=0))
+
+#── Helper Functions ──────────────────────────────────────
+
+get_card_powers () {
+    # Manual Detection of Graphics card power settings
+    #────────────────────────────────────────────────────
+    # NOTE
+    # - For an "RTX 4070 Laptop", we have:
+    #       MAX_POWER       :  140 [W] 
+    #       MAX_SM_CLOCK    : 3105 [MHz]
+    #
+    # - MAX_POWER    is already obtained by 'power.max_limit'
+    # - MAX_SM_CLOCK is already obtained by 'clocks.max.sm'
+    # 
+    #   nvidia-smi -q -d POWER
+    #   nvidia-smi -q -d CLOCK
+    #       Provides: [Graphics,SM,Memory,Video]
+    #       - SM      : The Streaming Multiprocessor clock (SM) is the most important for compute-heavy workloads.
+    #       - Memory  : The GPU DRAM (GDDR/HBM) clock determines memory bandwidth and memory bus width.
+    #────────────────────────────────────────────────────
+    MAX_POWER=$(nvidia-smi -q -d POWER | grep "Max Power Limit" -m 1 | awk -F " " '{print int($5)}')
+    MAX_SM_CLOCK=$(nvidia-smi -q -d CLOCK | grep -E "Max Clocks" -A2 | tail -1 |  awk -F " " '{print int($3)}')
+    #[ -z "$MAX_POWER" ] && MAX_POWER=140            # Set to a known default in case above fails
+    #[ -z "$MAX_SM_CLOCK" ] && MAX_SM_CLOCK=3105     # Set to a known default in case above fails
+}
 
 percentBar ()  {
     local prct totlen=$((8*$2)) lastchar barstring blankstring;
@@ -101,21 +162,15 @@ percentBar ()  {
 
 # Usage:  print_vram_bar <percentage>
 print_vram_bar () {
-	# ToDo:
-	# [ ] Separate out BAR_COLOR and use only one percentBar() line.
-
 	# The legend box is 45 characters wide:
     #BARWIDTH=$((COLUMNS-7))
     local p=$1 BARWIDTH=$((42))
-    if [ "$p" -lt 70 ]; then
-        percentBar $p $BARWIDTH bar; printf '\r \e[0;32m\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" $p  # Green
-    elif [ "$p" -gt 90 ]; then
-        percentBar $p $BARWIDTH bar; printf '\r \e[0;31m\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" $p  # Red
-    else
-        percentBar $p $BARWIDTH bar; printf '\r \e[0;33m\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" $p  # Orange
+    if   [ "$p" -gt 90 ]; then color="$VP_RED"
+    elif [ "$p" -gt 70 ]; then color="$VP_ORA"
+    else                       color="$VP_GRN"
     fi
+    percentBar "$p" $BARWIDTH bar; printf '\r '"$color"'\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" "$p"
 }
-
 
 # Add a dedicated function to overwrite just the bar line:
 update_vram_bar() {
@@ -129,20 +184,20 @@ update_vram_bar() {
 # ── Threshold helpers ──────────────────────────────────────────────────────────
 
 vram_color()  { local p=$1
-    [ "$p" -ge 95 ] && echo "$C_CRIT" && return
-    [ "$p" -gt 80 ] && echo "$C_WARN" && return
+    [ "$p" -ge 95 ] && echo "$C_CRIT" && return     # severly affects concurrent use of graphics & AI TPS values
+    [ "$p" -gt 80 ] && echo "$C_WARN" && return     # normal - multi-use possible
     echo "$C_OK"; }
 temp_color()  { local t=${1%.*}
-    [ "$t" -gt 86 ] && echo "$C_CRIT" && return
-    [ "$t" -ge 70 ] && echo "$C_WARN" && return
+    [ "$t" -gt 86 ] && echo "$C_CRIT" && return     # This is the Tc for triggering GPU throttling
+    [ "$t" -ge 70 ] && echo "$C_WARN" && return     # normal
     echo "$C_OK"; }
 power_color() { local w=${1%.*}
-    [ "$w" -gt 100 ] && echo "$C_CRIT" && return
-    [ "$w" -ge 80  ] && echo "$C_WARN" && return
+    [ "$w" -gt 100 ] && echo "$C_CRIT" && return    # ToDo: automatic detection
+    [ "$w" -ge 80  ] && echo "$C_WARN" && return    # normal
     echo "$C_OK"; }
 gpu_color()   { local g=${1%.*}
-    [ "$g" -gt 95 ] && echo "$C_CRIT" && return
-    [ "$g" -ge 80 ] && echo "$C_WARN" && return
+    [ "$g" -gt 95 ] && echo "$C_CRIT" && return     # Who/what cares?
+    [ "$g" -ge 80 ] && echo "$C_WARN" && return     # Who/what cares?
     echo "$C_BLUE"; }
 
 # ── Column widths ──────────────────────────────────────────────────────────────
@@ -159,6 +214,7 @@ W_PWR=19
 
 seg() { printf '─%.0s' $(seq 1 "$1"); }
 
+# shellcheck disable=SC2059
 hline() {
     local L=$1 M=$2 R=$3
     printf "${C_SEP}${L}$(seg $((W_TIME+2)))${M}$(seg $((W_GPU+2)))${M}$(seg $((W_PSTATE+2)))${M}$(seg $((W_UTIL+2)))${M}$(seg $((W_VRAM+2)))${M}$(seg $((W_TEMP+2)))${M}$(seg $((W_PWR+2)))${R}${RESET}\n"
@@ -178,7 +234,8 @@ hrow_dim() {
 # ── Static frame: printed once ────────────────────────────────────────────────
 
 print_static_frame() {
-    printf "\033c"   # clear screen once (does not reset terminal/colors)
+    # clear screen once (does not reset terminal/colors)
+    printf "\033c"   
     printf "${C_HDR}  ⬡  GPU Monitor  ${RESET}${C_SEP}—  ${C_HDR}refresh every %ss${RESET}\n\n" "$INTERVAL"
     hline ┌ ┬ ┐
     hrow     "TIME"       "GPU#" "pSTATE"  "GPU [%]"  "VRAM [MiB]"        "TEMP [°C]" "POWER [W]"
@@ -196,6 +253,7 @@ GPU_COUNT=$(nvidia-smi --query-gpu=index --format=csv,noheader 2>/dev/null | wc 
 # ── Make a box for the Legend ─────────────────────────────────────────────────
 
 legend_box() {
+    # shellcheck disable=SC2059
     local W=42
     printf "${C_SEP}┌$(seg $((W)))┐${RESET}\n"
     printf "${C_SEP}│${RESET} ${C_HDR}GPU   [%%]   ${C_BLUE}● <80${RESET}    ${C_WARN}● 80–95${RESET}   ${C_CRIT}● >95${RESET}     ${C_SEP}│${RESET}\n"
@@ -209,6 +267,7 @@ legend_box() {
 # ── Print blank placeholder rows + footer + legend (printed once) ─────────────
 
 print_bottom_frame() {
+    # shellcheck disable=SC2059
     local i
     for (( i=0; i<GPU_COUNT; i++ )); do
         printf "${C_SEP}│${RESET} %-${W_TIME}s ${C_SEP}│${RESET} %-${W_GPU}s ${C_SEP}│${RESET} %-${W_PSTATE}s ${C_SEP}│${RESET} %-${W_UTIL}s ${C_SEP}│${RESET} %-${W_VRAM}s ${C_SEP}│${RESET} %-${W_TEMP}s ${C_SEP}│${RESET} %-${W_PWR}s\n" \
@@ -223,17 +282,27 @@ print_bottom_frame() {
     legend_box
     printf "\n"
     printf "  ${C_HDR}Press ${C_LGRY}[Ctrl-c]${RESET}${C_HDR} to exit.${RESET}\n"
+
+    if [ "$DEBUG" -eq 1 ]; then
+        printf "\n"
+        echo "  MAX_SM_CLOCK : $MAX_SM_CLOCK Mhz"
+        echo "  MAX_POWER    :  $MAX_POWER W"
+    fi
 }
 
 # Lines from cursor (after last header hline) to get back up to row N (0-indexed)
 #   GPU_COUNT data rows + 1 (└) + 1 (blank) + 1 (bar) + 1 (┌) + 4 (legend) + 1 (┘) + 1 (blank) + 1 (exit) = GPU_COUNT + 11
-LINES_BELOW=$(( GPU_COUNT + 11 ))	# With legend_box() + VRAM progress bar
-
+if [ "$DEBUG" -eq 1 ]; then
+    LINES_BELOW=$(( GPU_COUNT + 14 ))	# With DEBUG info
+else
+    LINES_BELOW=$(( GPU_COUNT + 11 ))	# With legend_box() + VRAM progress bar
+fi
 
 # ── Overwrite a single data row in place ──────────────────────────────────────
 
 # $1 = 0-indexed row number
 update_row() {
+    # shellcheck disable=SC2059
     local row_idx=$1
     shift
 
@@ -241,19 +310,20 @@ update_row() {
 
     local vram_pct=0
     [ "$mem_total" -gt 0 ] 2>/dev/null && vram_pct=$(( vram * 100 / mem_total ))
-    export VRAMP=$vram_pct
+    #export VRAMP=$vram_pct
+    VRAMP=$vram_pct
 
-    local C_VRAM; C_VRAM="$(vram_color  "$vram_pct")"
-    local C_T;    C_T="$(temp_color     "$temp")"
-    local C_P;    C_P="$(power_color    "$pwr")"
-    local C_U;    C_U="$(gpu_color      "$gpu_util")"
+    local C_VRAM;   C_VRAM="$(vram_color  "$vram_pct")"
+    local C_T;      C_T="$(temp_color     "$temp")"
+    local C_P;      C_P="$(power_color    "$pwr")"
+    local C_U;      C_U="$(gpu_color      "$gpu_util")"
 
-    local p_time; p_time=$(printf "%-${W_TIME}s"  "$time_only")
-    local p_idx;  p_idx=$(printf  "%${W_GPU}s"    "$idx")
-    local p_pstate; p_pstate=$(printf "%-${W_PSTATE}s" "$pstate")
-    local p_util; p_util=$(printf "%-${W_UTIL}s"  "${gpu_util} %")
-    local p_pwr_draw; p_pwr_draw=$(printf "%6s" "$pwr")
-    local p_pwr_max;  p_pwr_max=$(printf  "%-10s" "$pwr_max")
+    local p_time;       p_time=$(printf "%-${W_TIME}s"  "$time_only")
+    local p_idx;        p_idx=$(printf  "%${W_GPU}s"    "$idx")
+    local p_pstate;     p_pstate=$(printf "%-${W_PSTATE}s" "$pstate")
+    local p_util;       p_util=$(printf "%-${W_UTIL}s"  "${gpu_util} %")
+    local p_pwr_draw;   p_pwr_draw=$(printf "%6s" "$pwr")
+    local p_pwr_max;    p_pwr_max=$(printf  "%-10s" "$pwr_max")
 
     # Move cursor up from bottom of printed block to the target row
     # We are currently sitting after the last line printed; move up enough lines.															   
@@ -282,7 +352,7 @@ poll() {
     while IFS=',' read -r ts idx pstate gpu_util mem_used mem_res mem_total mem_free temp pwr pwr_max; do
         ts=$(echo "$ts"               | xargs)
         idx=$(echo "$idx"             | xargs)
-        pstate=$(echo "$pstate"         | xargs | cut -c1-10)
+        pstate=$(echo "$pstate"       | xargs | cut -c1-10)
         gpu_util=$(echo "$gpu_util"   | xargs)
         mem_used=$(echo "$mem_used"   | xargs)
         mem_res=$(echo "$mem_res"     | xargs)
@@ -305,7 +375,10 @@ poll() {
 
 # ── Init ───────────────────────────────────────────────────────────────────────
 
+# Catch [Ctrl-c] key-press
 trap 'printf "\033[0m\n"; exit 0' INT TERM
+
+[ "$DEBUG" -eq 1 ] && get_card_powers
 
 print_static_frame
 print_bottom_frame
