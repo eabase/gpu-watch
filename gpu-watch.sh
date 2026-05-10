@@ -2,8 +2,8 @@
 # gpu-watch.sh — Pretty nvidia-smi monitor
 #------------------------------------------------------------------------------
 # Author	: eabase
-# Date		: 2026-05-09
-# Version	: 1.0.2
+# Date		: 2026-05-10
+# Version	: 1.0.3
 # Repo 		: https://github.com/eabase/gpu-watch
 #
 #------------------------------------------------------------------------------
@@ -57,7 +57,6 @@
 #
 #------------------------------------------------------------------------------
 
-
 INTERVAL=${1:-2}
 
 # ── ANSI colors ────────────────────────────────────────────────────────────────
@@ -75,8 +74,6 @@ C_HDR="\033[38;5;245m"
 C_SEP="\033[38;5;237m"
 
 # ── Helper Files (Progress Bar) ────────────────────────────────────────────────
-
-# Added by eabase
 
 #----------------------------------------------------------
 # Global Variables
@@ -102,7 +99,6 @@ percentBar ()  {
 }
 
 
-
 # Usage:  print_vram_bar <percentage>
 print_vram_bar () {
 	# ToDo:
@@ -110,14 +106,13 @@ print_vram_bar () {
 
 	# The legend box is 45 characters wide:
     #BARWIDTH=$((COLUMNS-7))
-    local p=$1 BARWIDTH=$((43))
-
+    local p=$1 BARWIDTH=$((42))
     if [ "$p" -lt 70 ]; then
-        percentBar $p $BARWIDTH bar; printf '\r \e[0;32m\e[48;5;235m%s\e[0m\U258f%6.0f%%' "$bar" $p  # Green
+        percentBar $p $BARWIDTH bar; printf '\r \e[0;32m\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" $p  # Green
     elif [ "$p" -gt 90 ]; then
-        percentBar $p $BARWIDTH bar; printf '\r \e[0;31m\e[48;5;235m%s\e[0m\U258f%6.0f%%' "$bar" $p  # Red
+        percentBar $p $BARWIDTH bar; printf '\r \e[0;31m\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" $p  # Red
     else
-        percentBar $p $BARWIDTH bar; printf '\r \e[0;33m\e[48;5;235m%s\e[0m\U258f%6.0f%%' "$bar" $p  # Orange
+        percentBar $p $BARWIDTH bar; printf '\r \e[0;33m\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" $p  # Orange
     fi
 }
 
@@ -154,6 +149,7 @@ gpu_color()   { local g=${1%.*}
 
 W_TIME=11
 W_GPU=7
+W_PSTATE=8
 W_UTIL=8
 W_VRAM=24
 W_TEMP=9
@@ -165,17 +161,17 @@ seg() { printf '─%.0s' $(seq 1 "$1"); }
 
 hline() {
     local L=$1 M=$2 R=$3
-    printf "${C_SEP}${L}$(seg $((W_TIME+2)))${M}$(seg $((W_GPU+2)))${M}$(seg $((W_UTIL+2)))${M}$(seg $((W_VRAM+2)))${M}$(seg $((W_TEMP+2)))${M}$(seg $((W_PWR+2)))${R}${RESET}\n"
+    printf "${C_SEP}${L}$(seg $((W_TIME+2)))${M}$(seg $((W_GPU+2)))${M}$(seg $((W_PSTATE+2)))${M}$(seg $((W_UTIL+2)))${M}$(seg $((W_VRAM+2)))${M}$(seg $((W_TEMP+2)))${M}$(seg $((W_PWR+2)))${R}${RESET}\n"
 }
 
 hrow() {
-    printf "${C_SEP}│${RESET} ${C_HDR}%-${W_TIME}s${RESET} ${C_SEP}│${RESET} ${C_HDR}%-${W_GPU}s${RESET} ${C_SEP}│${RESET} ${C_HDR}%-${W_UTIL}s${RESET} ${C_SEP}│${RESET} ${C_HDR}%-${W_VRAM}s${RESET} ${C_SEP}│${RESET} ${C_HDR}%-${W_TEMP}s${RESET} ${C_SEP}│${RESET} ${C_HDR}%-${W_PWR}s${RESET} ${C_SEP}│${RESET}\n" \
-        "$1" "$2" "$3" "$4" "$5" "$6"
+    printf "${C_SEP}│${RESET} ${C_HDR}%-${W_TIME}s${RESET} ${C_SEP}│${RESET} ${C_HDR}%-${W_GPU}s${RESET} ${C_SEP}│${RESET} ${C_HDR}%-${W_PSTATE}s${RESET} ${C_SEP}│${RESET} ${C_HDR}%-${W_UTIL}s${RESET} ${C_SEP}│${RESET} ${C_HDR}%-${W_VRAM}s${RESET} ${C_SEP}│${RESET} ${C_HDR}%-${W_TEMP}s${RESET} ${C_SEP}│${RESET} ${C_HDR}%-${W_PWR}s${RESET} ${C_SEP}│${RESET}\n" \
+        "$1" "$2" "$3" "$4" "$5" "$6" "$7"
 }
 
 hrow_dim() {
-    printf "${C_SEP}│${RESET} ${C_SEP}%-${W_TIME}s${RESET} ${C_SEP}│${RESET} ${C_SEP}%-${W_GPU}s${RESET} ${C_SEP}│${RESET} ${C_SEP}%-${W_UTIL}s${RESET} ${C_SEP}│${RESET} ${C_SEP}%-${W_VRAM}s${RESET} ${C_SEP}│${RESET} ${C_SEP}%-${W_TEMP}s${RESET} ${C_SEP}│${RESET} ${C_SEP}%-${W_PWR}s${RESET} ${C_SEP}│${RESET}\n" \
-        "$1" "$2" "$3" "$4" "$5" "$6"
+    printf "${C_SEP}│${RESET} ${C_SEP}%-${W_TIME}s${RESET} ${C_SEP}│${RESET} ${C_SEP}%-${W_GPU}s${RESET} ${C_SEP}│${RESET} ${C_SEP}%-${W_PSTATE}s${RESET} ${C_SEP}│${RESET} ${C_SEP}%-${W_UTIL}s${RESET} ${C_SEP}│${RESET} ${C_SEP}%-${W_VRAM}s${RESET} ${C_SEP}│${RESET} ${C_SEP}%-${W_TEMP}s${RESET} ${C_SEP}│${RESET} ${C_SEP}%-${W_PWR}s${RESET} ${C_SEP}│${RESET}\n" \
+        "$1" "$2" "$3" "$4" "$5" "$6" "$7"
 }
 
 
@@ -185,8 +181,8 @@ print_static_frame() {
     printf "\033c"   # clear screen once (does not reset terminal/colors)
     printf "${C_HDR}  ⬡  GPU Monitor  ${RESET}${C_SEP}—  ${C_HDR}refresh every %ss${RESET}\n\n" "$INTERVAL"
     hline ┌ ┬ ┐
-    hrow "TIME"       "GPU#"    "GPU [%]"  "VRAM [MiB]"   "TEMP [°C]" "POWER [W]"
-    hrow_dim "[HH:MM:SS]" ""        ""         "used/total (free)" ""       "draw/max"
+    hrow     "TIME"       "GPU#" "pSTATE"  "GPU [%]"  "VRAM [MiB]"        "TEMP [°C]" "POWER [W]"
+    hrow_dim "[HH:MM:SS]" ""     ""       ""          "used/total (free)" ""          "draw/max"
     hline ├ ┼ ┤
 }
 
@@ -197,7 +193,8 @@ GPU_COUNT=$(nvidia-smi --query-gpu=index --format=csv,noheader 2>/dev/null | wc 
 [ "$GPU_COUNT" -lt 1 ] && GPU_COUNT=1
 
 
-# Make a box for the Legend
+# ── Make a box for the Legend ─────────────────────────────────────────────────
+
 legend_box() {
     local W=42
     printf "${C_SEP}┌$(seg $((W)))┐${RESET}\n"
@@ -214,28 +211,23 @@ legend_box() {
 print_bottom_frame() {
     local i
     for (( i=0; i<GPU_COUNT; i++ )); do
-        printf "${C_SEP}│${RESET} %-${W_TIME}s ${C_SEP}│${RESET} %-${W_GPU}s ${C_SEP}│${RESET} %-${W_UTIL}s ${C_SEP}│${RESET} %-${W_VRAM}s ${C_SEP}│${RESET} %-${W_TEMP}s ${C_SEP}│${RESET} %-${W_PWR}s\n" \
-            "" "" "" "" "" ""
+        printf "${C_SEP}│${RESET} %-${W_TIME}s ${C_SEP}│${RESET} %-${W_GPU}s ${C_SEP}│${RESET} %-${W_PSTATE}s ${C_SEP}│${RESET} %-${W_UTIL}s ${C_SEP}│${RESET} %-${W_VRAM}s ${C_SEP}│${RESET} %-${W_TEMP}s ${C_SEP}│${RESET} %-${W_PWR}s\n" \
+            "" "" "" "" "" "" ""
     done
     hline └ ┴ ┘
     printf "\n"
 
-	# This '\n' is a place-holder for print_vram_bar() <vram_pct>
+    # This '\n' is a place-holder for print_vram_bar() <vram_pct>
     printf "\n"
 
-	legend_box
+    legend_box
     printf "\n"
     printf "  ${C_HDR}Press ${C_LGRY}[Ctrl-c]${RESET}${C_HDR} to exit.${RESET}\n"
 }
 
 # Lines from cursor (after last header hline) to get back up to row N (0-indexed)
-# Layout after hline ├┼┤:
-#   row 0 is 1 line down, row 1 is 2 lines down, etc.
-# After printing all GPU_COUNT rows + footer + legend lines, we need to go back up.
-# Total lines below the ├ separator:
-#   GPU_COUNT data rows + 1 (└) + 1 (blank) + 4 legend + 1 (blank) + 1 exit = GPU_COUNT + 8
-#LINES_BELOW=$(( GPU_COUNT + 8 ))	# Without legend_box()
-LINES_BELOW=$(( GPU_COUNT + 11 ))	# With legend_box() + VRAM "progress bar"
+#   GPU_COUNT data rows + 1 (└) + 1 (blank) + 1 (bar) + 1 (┌) + 4 (legend) + 1 (┘) + 1 (blank) + 1 (exit) = GPU_COUNT + 11
+LINES_BELOW=$(( GPU_COUNT + 11 ))	# With legend_box() + VRAM progress bar
 
 
 # ── Overwrite a single data row in place ──────────────────────────────────────
@@ -245,11 +237,11 @@ update_row() {
     local row_idx=$1
     shift
 
-    local time_only=$1 idx=$2 gpu_util=$3 vram=$4 mem_total=$5 mem_free=$6 temp=$7 pwr=$8 pwr_max=$9
+    local time_only=$1 idx=$2 pstate=$3 gpu_util=$4 vram=$5 mem_total=$6 mem_free=$7 temp=$8 pwr=$9 pwr_max=${10}
 
     local vram_pct=0
     [ "$mem_total" -gt 0 ] 2>/dev/null && vram_pct=$(( vram * 100 / mem_total ))
-	export VRAMP=$vram_pct
+    export VRAMP=$vram_pct
 
     local C_VRAM; C_VRAM="$(vram_color  "$vram_pct")"
     local C_T;    C_T="$(temp_color     "$temp")"
@@ -258,29 +250,25 @@ update_row() {
 
     local p_time; p_time=$(printf "%-${W_TIME}s"  "$time_only")
     local p_idx;  p_idx=$(printf  "%${W_GPU}s"    "$idx")
+    local p_pstate; p_pstate=$(printf "%-${W_PSTATE}s" "$pstate")
     local p_util; p_util=$(printf "%-${W_UTIL}s"  "${gpu_util} %")
-    local p_temp; p_temp=$(printf "%-${W_TEMP}s"  "${temp} °C")
-    local p_vram_used; p_vram_used=$(printf "%5d" "$vram")
-    local p_vram_tot;  p_vram_tot=$(printf  "%-5d" "$mem_total")
-    local p_pwr_draw;  p_pwr_draw=$(printf "%6s" "$pwr")
-    local p_pwr_max;   p_pwr_max=$(printf  "%-6s" "$pwr_max")
+    local p_pwr_draw; p_pwr_draw=$(printf "%6s" "$pwr")
+    local p_pwr_max;  p_pwr_max=$(printf  "%-10s" "$pwr_max")
 
     # Move cursor up from bottom of printed block to the target row
-    # We are currently sitting after the last line printed; move up enough lines.
+    # We are currently sitting after the last line printed; move up enough lines.															   
     local lines_up=$(( LINES_BELOW - row_idx ))
     printf "\033[%dA\r" "$lines_up"
 
     # Overwrite the row
-    #  VRAM visible: "%5d / %5d (%5d)" = 5+3+5+2+5+1 = 21 + leading space = 22 = W_VRAM ✓
-    # POWER visible: "%6s / %-10s" = 6+3+10 = 19 = W_PWR ✓
-
     printf "${C_SEP}│${RESET}"
     printf " ${C_TIME}%s${RESET} ${C_SEP}│${RESET}" "$p_time"
     printf " ${C_IDX}%s${RESET} ${C_SEP}│${RESET}"  "$p_idx"
+    printf " ${C_HDR}%s${RESET} ${C_SEP}│${RESET}"  "$p_pstate"
     printf " ${C_U}%s${RESET} ${C_SEP}│${RESET}"    "$p_util"
     printf " ${C_VRAM}%5d${RESET} / ${C_BLUE}%5d${RESET} ${C_SEP}(${RESET}${C_HDR}%-4d${RESET}${C_SEP})${RESET}     ${C_SEP}│${RESET}" "$vram" "$mem_total" "$mem_free"
     printf " ${C_T}%s °C    ${RESET} ${C_SEP}│${RESET}"  "$temp"
-    printf " ${C_P}%6s${RESET} / ${C_BLUE}%-10s${RESET} ${C_SEP}│${RESET}" "$pwr" "$pwr_max"
+    printf " ${C_P}%s${RESET} / ${C_BLUE}%s${RESET} ${C_SEP}│${RESET}" "$p_pwr_draw" "$p_pwr_max"
 
     # Move cursor back down to bottom
     printf "\033[%dB\r" "$lines_up"
@@ -291,9 +279,10 @@ update_row() {
 
 poll() {
     local row_idx=0
-    while IFS=',' read -r ts idx gpu_util mem_used mem_res mem_total mem_free temp pwr pwr_max; do
+    while IFS=',' read -r ts idx pstate gpu_util mem_used mem_res mem_total mem_free temp pwr pwr_max; do
         ts=$(echo "$ts"               | xargs)
         idx=$(echo "$idx"             | xargs)
+        pstate=$(echo "$pstate"         | xargs | cut -c1-10)
         gpu_util=$(echo "$gpu_util"   | xargs)
         mem_used=$(echo "$mem_used"   | xargs)
         mem_res=$(echo "$mem_res"     | xargs)
@@ -306,12 +295,12 @@ poll() {
         local time_only; time_only=$(echo "$ts" | grep -oP '\d{2}:\d{2}:\d{2}')
         local vram=$(( mem_used + mem_res ))
 
-        update_row "$row_idx" "$time_only" "$idx" "$gpu_util" "$vram" "$mem_total" "$mem_free" "$temp" "$pwr" "$pwr_max"
+        update_row "$row_idx" "$time_only" "$idx" "$pstate" "$gpu_util" "$vram" "$mem_total" "$mem_free" "$temp" "$pwr" "$pwr_max"
         row_idx=$(( row_idx + 1 ))
     done < <(nvidia-smi \
-        --query-gpu=timestamp,index,utilization.gpu,memory.used,memory.reserved,memory.total,memory.free,temperature.gpu,power.draw,power.max_limit \
+        --query-gpu=timestamp,index,pstate,utilization.gpu,memory.used,memory.reserved,memory.total,memory.free,temperature.gpu,power.draw,power.max_limit \
         --format=csv,noheader,nounits 2>/dev/null)
-	update_vram_bar
+    update_vram_bar
 }
 
 # ── Init ───────────────────────────────────────────────────────────────────────
