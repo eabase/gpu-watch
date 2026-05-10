@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------------
 # Author	: eabase
 # Date		: 2026-05-09
-# Version	: 1.0.1
+# Version	: 1.0.2
 # Repo 		: https://github.com/eabase/gpu-watch
 #
 #------------------------------------------------------------------------------
@@ -73,6 +73,63 @@ C_WARN="\033[38;5;208m"
 C_CRIT="\033[38;5;196m"
 C_HDR="\033[38;5;245m"
 C_SEP="\033[38;5;237m"
+
+# ── Helper Files (Progress Bar) ────────────────────────────────────────────────
+
+# Added by eabase
+
+#----------------------------------------------------------
+# Global Variables
+#----------------------------------------------------------
+
+let VRAMP=0	# VRAM percentage (to be used in) print_vram_bar
+
+
+#----------------------------------------------------------
+# Helper Functions
+#----------------------------------------------------------
+
+percentBar ()  {
+    local prct totlen=$((8*$2)) lastchar barstring blankstring;
+    printf -v prct %.2f "$1"
+    ((prct=10#${prct/.}*totlen/10000, prct%8)) &&
+        printf -v lastchar '\\U258%X' $(( 16 - prct%8 )) ||
+            lastchar=''
+    printf -v barstring '%*s' $((prct/8)) ''
+    printf -v barstring '%b' "${barstring// /\\U2588}$lastchar"
+    printf -v blankstring '%*s' $(((totlen-prct)/8)) ''
+    printf -v "$3" '%s%s' "$barstring" "$blankstring"
+}
+
+
+
+# Usage:  print_vram_bar <percentage>
+print_vram_bar () {
+	# ToDo:
+	# [ ] Separate out BAR_COLOR and use only one percentBar() line.
+
+	# The legend box is 45 characters wide:
+    #BARWIDTH=$((COLUMNS-7))
+    local p=$1 BARWIDTH=$((43))
+
+    if [ "$p" -lt 70 ]; then
+        percentBar $p $BARWIDTH bar; printf '\r \e[0;32m\e[48;5;235m%s\e[0m\U258f%6.0f%%' "$bar" $p  # Green
+    elif [ "$p" -gt 90 ]; then
+        percentBar $p $BARWIDTH bar; printf '\r \e[0;31m\e[48;5;235m%s\e[0m\U258f%6.0f%%' "$bar" $p  # Red
+    else
+        percentBar $p $BARWIDTH bar; printf '\r \e[0;33m\e[48;5;235m%s\e[0m\U258f%6.0f%%' "$bar" $p  # Orange
+    fi
+}
+
+
+# Add a dedicated function to overwrite just the bar line:
+update_vram_bar() {
+    local lines_up=$(( LINES_BELOW - GPU_COUNT - 2 ))  # 2 = footer line + blank line
+    printf "\033[%dA\r" "$lines_up"
+    print_vram_bar "$VRAMP"
+    printf "\033[%dB\r" "$lines_up"
+}
+
 
 # ── Threshold helpers ──────────────────────────────────────────────────────────
 
@@ -162,6 +219,10 @@ print_bottom_frame() {
     done
     hline └ ┴ ┘
     printf "\n"
+
+	# This '\n' is a place-holder for print_vram_bar() <vram_pct>
+    printf "\n"
+
 	legend_box
     printf "\n"
     printf "  ${C_HDR}Press ${C_LGRY}[Ctrl-c]${RESET}${C_HDR} to exit.${RESET}\n"
@@ -174,7 +235,7 @@ print_bottom_frame() {
 # Total lines below the ├ separator:
 #   GPU_COUNT data rows + 1 (└) + 1 (blank) + 4 legend + 1 (blank) + 1 exit = GPU_COUNT + 8
 #LINES_BELOW=$(( GPU_COUNT + 8 ))	# Without legend_box()
-LINES_BELOW=$(( GPU_COUNT + 10 ))	# With legend_box()
+LINES_BELOW=$(( GPU_COUNT + 11 ))	# With legend_box() + VRAM "progress bar"
 
 
 # ── Overwrite a single data row in place ──────────────────────────────────────
@@ -188,6 +249,7 @@ update_row() {
 
     local vram_pct=0
     [ "$mem_total" -gt 0 ] 2>/dev/null && vram_pct=$(( vram * 100 / mem_total ))
+	export VRAMP=$vram_pct
 
     local C_VRAM; C_VRAM="$(vram_color  "$vram_pct")"
     local C_T;    C_T="$(temp_color     "$temp")"
@@ -209,7 +271,7 @@ update_row() {
     printf "\033[%dA\r" "$lines_up"
 
     # Overwrite the row
-    # VRAM visible: "%5d / %5d (%5d)" = 5+3+5+2+5+1 = 21 + leading space = 22 = W_VRAM ✓
+    #  VRAM visible: "%5d / %5d (%5d)" = 5+3+5+2+5+1 = 21 + leading space = 22 = W_VRAM ✓
     # POWER visible: "%6s / %-10s" = 6+3+10 = 19 = W_PWR ✓
 
     printf "${C_SEP}│${RESET}"
@@ -249,6 +311,7 @@ poll() {
     done < <(nvidia-smi \
         --query-gpu=timestamp,index,utilization.gpu,memory.used,memory.reserved,memory.total,memory.free,temperature.gpu,power.draw,power.max_limit \
         --format=csv,noheader,nounits 2>/dev/null)
+	update_vram_bar
 }
 
 # ── Init ───────────────────────────────────────────────────────────────────────
