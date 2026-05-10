@@ -3,5 +3,10 @@
 # development backup files
 bak/
 
+# Felix Hauri Bash files
+# https://f-hauri.ch/vrac/
+hauri/
+
+
 # claude.ai origin hash
 origin.txt

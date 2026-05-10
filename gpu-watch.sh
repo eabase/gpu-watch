@@ -69,6 +69,7 @@
 #   
 # ToDo:
 #   - [ ] Move this list into repo issue or README file.
+#   - [ ] Remove all shellcheck statements, as it is not useful/compatible with this script.
 #   - [x] Separate out BAR_COLOR and use only one percentBar() line in print_vram_bar()
 #   - [-] Add automatic detection of GPU Max power level in get_card_powers() - Already obtained in poll()!
 #   - [x] Add automatic detection of GPU Max clock rate in get_card_powers()
