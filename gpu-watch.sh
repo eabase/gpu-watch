@@ -58,15 +58,15 @@
 #
 #	- None for Bash AFAIK
 #	- https://github.com/lablup/all-smi		# Super nice Rust based nvtop-styled replacement of nvidia-smi
-# 
+#
 #------------------------------------------------------------------------------
 # NOTES
-#   
-#   The Bash shellcheck testing have issues with this script as: 
+#
+#   The Bash shellcheck testing have issues with this script as:
 #   - it depends on using inline variables within printf()
 #   - it uses multiple commands on one line, while shellcheck is only able to check one command at the time.
 #   - Some variables are placeholders for ToDo items.
-#   
+#
 # ToDo:
 #   - [ ] Move this list into repo issue or README file.
 #   - [ ] Remove all shellcheck statements, as it is not useful/compatible with this script.
@@ -181,7 +181,8 @@ print_vram_bar () {
     else                       color="$VP_GRN"
     fi
     # shellcheck disable=SC2154     # unassigned variable
-    percentBar "$p" $BARWIDTH bar; printf '\r '"$color"'\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" "$p"
+	# As bar "limits" we use the "right-bar" (\u2595) and "left-bar" (\u258f) UTF-8 characters.
+    percentBar "$p" $BARWIDTH bar; printf '\r\U2595'"$color"'\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" "$p"
 }
 
 # Add a dedicated function to overwrite just the bar line:

@@ -7,6 +7,8 @@ bak/
 # https://f-hauri.ch/vrac/
 hauri/
 
+# More useful bash
+extras/
 
 # claude.ai origin hash
 origin.txt
