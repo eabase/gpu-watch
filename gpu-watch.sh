@@ -2,8 +2,8 @@
 # gpu-watch.sh — A prettyfied nvidia-smi GPU monitor in bash
 #------------------------------------------------------------------------------
 # Author	: eabase
-# Date		: 2026-05-10
-# Version	: 1.0.4
+# Date		: 2026-05-12
+# Version	: 1.0.5
 # Repo 		: https://github.com/eabase/gpu-watch
 #
 #------------------------------------------------------------------------------
@@ -69,6 +69,7 @@
 #
 # ToDo:
 #   - [ ] Move this list into repo issue or README file.
+#	- [ ] Add a "max" line to the VRAM precentage bar. Also add a reset key (trap), while running.
 #   - [ ] Remove all shellcheck statements, as it is not useful/compatible with this script.
 #   - [x] Separate out BAR_COLOR and use only one percentBar() line in print_vram_bar()
 #   - [-] Add automatic detection of GPU Max power level in get_card_powers() - Already obtained in poll()!
@@ -114,7 +115,7 @@ C_SEP="\033[38;5;237m"      #
 
 #── Shellcheck Disabled ──────────────────────────────────────
 # shellcheck disable=SC2059     # Using variables in the printf
-# shellcheck disable=SC2034     # ToDo Use Unused variables 
+# shellcheck disable=SC2034     # ToDo Use Unused variables
 
 #── ANSI Color Codes ──────────────────────────────────────
 
@@ -128,7 +129,7 @@ VP_ORA='\e[0;33m'       # Orange
 #── Global Variables ──────────────────────────────────────
 
 # VRAM percentage set (exported) in update_row() and used in update_vram_bar()
-#let VRAMP=0	
+#let VRAMP=0
 ((VRAMP=0))
 ((MAX_POWER=0))
 ((MAX_SM_CLOCK=0))
@@ -145,7 +146,7 @@ get_card_powers () {
     #
     # - MAX_POWER    is already obtained by 'power.max_limit'
     # - MAX_SM_CLOCK is already obtained by 'clocks.max.sm'
-    # 
+    #
     #   nvidia-smi -q -d POWER
     #   nvidia-smi -q -d CLOCK
     #       Provides: [Graphics,SM,Memory,Video]
@@ -180,9 +181,9 @@ print_vram_bar () {
     elif [ "$p" -gt 70 ]; then color="$VP_ORA"
     else                       color="$VP_GRN"
     fi
-    # shellcheck disable=SC2154     # unassigned variable
+    percentBar "$p" $BARWIDTH bar
 	# As bar "limits" we use the "right-bar" (\u2595) and "left-bar" (\u258f) UTF-8 characters.
-    percentBar "$p" $BARWIDTH bar; printf '\r\U2595'"$color"'\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" "$p"
+	printf '\r\U2595'"$color"'\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" "$p"
 }
 
 # Add a dedicated function to overwrite just the bar line:
@@ -220,7 +221,7 @@ W_GPU=4     # 7
 W_PSTATE=5  # 8
 W_UTIL=7    # 8
 W_VRAM=24   # 24    fails on 22
-W_TEMP=9
+W_TEMP=9	# 9
 W_PWR=19    # 19   fails on 17
 
 # ── Box drawing ────────────────────────────────────────────────────────────────

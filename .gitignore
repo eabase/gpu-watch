@@ -1,14 +1,21 @@
-# GIT ignore file
+#----------------------------
+# gpu-watch GIT ignore file
+#----------------------------
 
-# development backup files
+# Release Backups
 bak/
+
+# Development Files
+dev/
+
 
 # Felix Hauri Bash files
 # https://f-hauri.ch/vrac/
-hauri/
 
-# More useful bash
-extras/
+#hauri/
+#extras/
+#junk/
 
-# claude.ai origin hash
-origin.txt
+#----------------------------
+# END
+#----------------------------
