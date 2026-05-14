@@ -15,7 +15,7 @@
 ### Description
 
 A bash-based prettifier wrapper for `nvidia-smi`.
-A project vibe-coded using Claude.ai chat.
+
 
 **Current Status**:
 
@@ -29,8 +29,8 @@ Repo          : https://github.com/eabase/gpu-watch
 **Example Output:**
 
 > The screenshot below is an example while running `gpu-watch` in an MSYS bash shell inside a `Windows Terminal`.  
-> This particular state was obtianed while running `Qwen3.6 35B A3B` using *LM Studio* (`lms`) **and** *Furmark*.  
-> I didn't think this was possible, but oh yeah!  
+> This particular state was obtianed while running `Qwen3.6 35B A3B` (~15 GB) using *LM Studio* (`lms`) **and** [*FurMark2*](https://www.geeks3d.com/furmark/).  
+> I didn't think this was possible, but oh yeah! :party:  
 
 In `Terminal-1` (MSYS)  
 
@@ -41,7 +41,7 @@ In `Terminal-1` (MSYS)
 
 In `Terminal-2` (powershell)  
 
-<sub>Loading up Qwen3.6-35B and firing off a prompt.</sub>  
+<sub>Loading up the (15GB) Qwen3.6-35B MoE and firing off a prompt.</sub>  
 ![Full](./assets/lms_chat_pompt_on_qwen36-35b-a3b_in_pwsh.png)  
 
 
@@ -135,7 +135,7 @@ Here are the screenshots!
 - **Animated VRAM progress bar** using pure ANSI/Unicode block characters
 - **Zero external dependencies** - only native bash and ANSI escape codes
 - **Configurable polling interval** (default: 2 seconds)
-- Already tuned if your laptop video card is the **NVIDIA GeForce RTX 4070 Mobile** (and same tune specs as for the **RTX 4060**.)
+- Wokring OOB with **NVIDIA GeForce RTX 4070 Mobile** (and **RTX 4060 Mobile**.)
 
 
 
@@ -143,10 +143,10 @@ Here are the screenshots!
 
 | Environment | Status |
 |-------------|--------|
-| Linux (bash)                   | ✅ Supported |
-| Windows 11 + MSYS2/MINGW64     | ✅ Supported |
-| NVIDIA RTX 4070 Mobile `[1]`   | ✅ Tested    |
-| Other NVIDIA GPUs              | ⚠️ Requires msome manual tuning (see below) |
+| Linux (bash)                       | ✅ Supported |
+| Windows 11 + Cygwin/MSYS2/MINGW64  | ✅ Supported |
+| NVIDIA RTX 4070 Mobile `[1]`       | ✅ Tested    |
+| Other NVIDIA GPUs                  | ⚠️ Requires adjusting the *legend* limits (see below) |
 
 <sub>`[1]` GPU specs for: [RTX 4070 Mobile](https://www.techpowerup.com/gpu-specs/geforce-rtx-4070-mobile.c3944).</sub>
 
@@ -154,12 +154,12 @@ Here are the screenshots!
 
 #### Usage
 
-
 ```bash
-./gpu-watch.sh [interval_seconds]   # default interval: 2s
+./gpu-watch.sh <interval_seconds>   # default interval: 2s
 ```
 
 **Examples:**
+
 ```bash
 ./gpu-watch.sh        # refresh every 2 seconds
 ./gpu-watch.sh 0.2    # refresh every 0.2 seconds
@@ -169,8 +169,12 @@ Here are the screenshots!
 
 ### :gear: Required GPU Customisation
 
-The color thresholds and limits are tuned for the **RTX 4070 Mobile**.  
-If you have a different card, adjust these values in the script:
+The real MAX limits shown are already obtained and used by the script, however  
+the *thresholds* for the *color legend/logic* have not yet been adjusted ...
+
+The **color thresholds** and limits are tuned for the **RTX 4070 Mobile**.  
+If you have a different card, adjust these values in the script.  
+Script can certainly be improved to automatically get these.  
 
 | Setting                          | RTX 4070M  | Action               |
 |----------------------------------|-----------------|-----------------|
@@ -222,7 +226,66 @@ For the `RTX 4070 Mobile` we have the following *thermal notes*:
 
 
 
-#### :link: Similar Projects
+---
+
+
+**Q:** *What is **`gpu-watch`** and what does it do?*
+
+- Wraps the default installed `nvidia-smi` monitoring tool in bash script that basically scrapes the output.
+- Checks internal GPU settings.
+- Continually reads a number of the most AI relevant GPU status variables and displays it in your color terminal.
+- Keeps shit simple and to the point: *VRAM, Temperature, Power Use, GPU state, GPU utilisation* - What else do you need?
+- Show Max values within a specified time period. (*TBA*)
+
+
+**Q:** *What does it **not** do?*
+
+- Does not send your *files, HW, OS, network*, and *browser password* data to foreign servers.
+- Does not do accurate high frequency GPU analysis. (It's a bloody wrapper!)
+- Does not provide any reliability on broken (non-ANSI supported) terminals on obscure linux distributions.
+- Does not (yet) have a listener for live GPU status feeds. (*TBA*)
+
+
+**Q:** *What other limitations does it have?*
+
+<sub>:red_circle:</sub> Nobody really care about this. So if you even find this project, I might buy you a beer one day.
+
+
+
+**Q:** *Why is this needed?*
+
+It probably isn't if you are already happy to use, the ugly AF `nvidia-smi` tool,  
+or the extremely bloated but fully featured `all-smi` Rust port,  
+or just happy with linux `nvtop`.
+
+For a minimalist GPU quick check, that is compatible without any  
+other installations whatsoever, this is it!
+
+
+**Q:** *Will I support this tool?*
+
+Sure if it is broken, but I will not spend too much time on *new* features,  
+as there are several incrediuble (but substantially more heavy) alternatives.
+
+---
+
+### Dependencies
+
+- `nvidia-smi` (comes with your nVIDIA driver install)
+- Any **Bash**!
+
+
+### Installation  
+
+Really nothing to do.
+1. Download the script [gpu-watch.sh](), or do a `git clone`. 
+2. Open your Bash terminal shell and run the script with `./gpu-watch.sh`.
+
+
+---
+
+
+#### :link: Links to Similar Projects?
 
 | Project | Description |
 |---------|-------------|
@@ -245,14 +308,12 @@ Found a bug or want to add support for your GPU?
 Find **all** available and sorted emoji's here:  
 - https://phw198.github.io/github-emoji-cheatsheet/
 
----
+
 
 #### No Stars For Funny Bars :sob:
 
 [![Star History Chart](https://api.star-history.com/chart?repos=eabase/gpu-watch&type=date&legend=top-left)](https://www.star-history.com/?repos=eabase%2Fgpu-watch&type=date&legend=top-left)
 
 
+Or maybe I'm just on the [wrong planet](https://starmapper.bruniaux.com/eabase/gpu-watch)...
 
-Or maybe I'm just on the wrong planet...
-
-[![zero](./assets/starmapper_zero.png)](https://starmapper.bruniaux.com/eabase/gpu-watch)

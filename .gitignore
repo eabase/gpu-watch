@@ -8,6 +8,13 @@ bak/
 # Development Files
 dev/
 
+# VS Code
+pr_gpuwatch.code-workspace
+
+# Test files
+llamacli-help.txt
+llamaserver-help.txt
+
 
 # Felix Hauri Bash files
 # https://f-hauri.ch/vrac/

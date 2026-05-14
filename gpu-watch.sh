@@ -68,15 +68,7 @@
 #   - Some variables are placeholders for ToDo items.
 #
 # ToDo:
-#   - [ ] Move this list into repo issue or README file.
-#	- [ ] Add a "max" line to the VRAM precentage bar. Also add a reset key (trap), while running.
-#   - [ ] Remove all shellcheck statements, as it is not useful/compatible with this script.
-#   - [x] Separate out BAR_COLOR and use only one percentBar() line in print_vram_bar()
-#   - [-] Add automatic detection of GPU Max power level in get_card_powers() - Already obtained in poll()!
-#   - [x] Add automatic detection of GPU Max clock rate in get_card_powers()
-#   - [ ] Add column for current SM clock rate.
-#   - [-] Fix colors of data line for newly added (pstate) column items
-#   - [ ] Move VRAM "progress" bar into VRAM cell (need 2 lines) using a "thin line" UTF-8 character (`\U258?`)
+#	<see github issue #1>
 #
 # References:
 #
@@ -84,7 +76,7 @@
 #   [2] 
 #   [3] https://www.shellcheck.net/
 #   [4] https://github.com/koalaman/shellcheck
-#   [5] 
+#   [5] https://www.geeks3d.com/furmark/
 #   [6] 
 #
 #------------------------------------------------------------------------------
@@ -249,7 +241,7 @@ hrow_dim() {
 
 print_static_frame() {
     # clear screen once (does not reset terminal/colors)
-    printf "\033c"   
+    printf "\033c"
     printf "${C_HDR}  ⬡  GPU Monitor  ${RESET}${C_SEP}—  ${C_HDR}refresh every %ss${RESET}\n\n" "$INTERVAL"
     hline ┌ ┬ ┐
     hrow     "TIME"       "GPU#" "STATE"  "GPU [%]"  "VRAM [MiB]"        "TEMP [°C]" "POWER [W]"
@@ -268,7 +260,6 @@ GPU_COUNT=$(nvidia-smi --query-gpu=index --format=csv,noheader 2>/dev/null | wc 
 
 legend_box() {
     local W=42
-    # shellcheck disable=SC2059
     printf "${C_SEP}┌$(seg $((W)))┐${RESET}\n"
     printf "${C_SEP}│${RESET} ${C_HDR}GPU   [%%]   ${C_BLUE}● <80${RESET}    ${C_WARN}● 80–95${RESET}   ${C_CRIT}● >95${RESET}     ${C_SEP}│${RESET}\n"
     printf "${C_SEP}│${RESET} ${C_HDR}VRAM  [%%]   ${C_OK}● <80${RESET}    ${C_WARN}● 80–95${RESET}   ${C_CRIT}● ≥95${RESET}     ${C_SEP}│${RESET}\n"
@@ -281,7 +272,6 @@ legend_box() {
 # ── Print blank placeholder rows + footer + legend (printed once) ─────────────
 
 print_bottom_frame() {
-    # shellcheck disable=SC2059
     local i
     for (( i=0; i<GPU_COUNT; i++ )); do
         printf "${C_SEP}│${RESET} %-${W_TIME}s ${C_SEP}│${RESET} %-${W_GPU}s ${C_SEP}│${RESET} %-${W_PSTATE}s ${C_SEP}│${RESET} %-${W_UTIL}s ${C_SEP}│${RESET} %-${W_VRAM}s ${C_SEP}│${RESET} %-${W_TEMP}s ${C_SEP}│${RESET} %-${W_PWR}s\n" \
@@ -316,12 +306,9 @@ fi
 
 # $1 = 0-indexed row number
 update_row() {
-    # shellcheck disable=SC2059
     local row_idx=$1
     shift
-
     local time_only=$1 idx=$2 pstate=$3 gpu_util=$4 vram=$5 mem_total=$6 mem_free=$7 temp=$8 pwr=$9 pwr_max=${10}
-
     local vram_pct=0
     [ "$mem_total" -gt 0 ] 2>/dev/null && vram_pct=$(( vram * 100 / mem_total ))
     #export VRAMP=$vram_pct
