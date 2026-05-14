@@ -2,8 +2,8 @@
 # gpu-watch.sh — A prettyfied nvidia-smi GPU monitor in bash
 #------------------------------------------------------------------------------
 # Author	: eabase
-# Date		: 2026-05-12
-# Version	: 1.0.5
+# Date		: 2026-05-14
+# Version	: 1.0.6
 # Repo 		: https://github.com/eabase/gpu-watch
 #
 #------------------------------------------------------------------------------
@@ -77,7 +77,7 @@
 #   [3] https://www.shellcheck.net/
 #   [4] https://github.com/koalaman/shellcheck
 #   [5] https://www.geeks3d.com/furmark/
-#   [6] 
+#   [6] https://gist.github.com/DocShotgun/a02a4c0c0a57e43ff4f038b46ca66ae0
 #
 #------------------------------------------------------------------------------
 
@@ -121,10 +121,13 @@ VP_ORA='\e[0;33m'       # Orange
 #── Global Variables ──────────────────────────────────────
 
 # VRAM percentage set (exported) in update_row() and used in update_vram_bar()
-#let VRAMP=0
 ((VRAMP=0))
 ((MAX_POWER=0))
 ((MAX_SM_CLOCK=0))
+
+((PEAK_VRAM=0))
+#((PEAK_TEMP=0))
+#((PEAK_POWR=0))
 
 #── Helper Functions ──────────────────────────────────────
 
@@ -175,7 +178,7 @@ print_vram_bar () {
     fi
     percentBar "$p" $BARWIDTH bar
 	# As bar "limits" we use the "right-bar" (\u2595) and "left-bar" (\u258f) UTF-8 characters.
-	printf '\r\U2595'"$color"'\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM' "$bar" "$p"
+	printf '\r\U2595'"$color"'\e[48;5;235m%s\e[0m\U258f%4.0f%% VRAM \e[1;30m(peak: \e[1;31m%5.0f \e[1;30mMiB)\e[0m' "$bar" "$p" "$PEAK_VRAM"
 }
 
 # Add a dedicated function to overwrite just the bar line:
@@ -188,6 +191,15 @@ update_vram_bar() {
 
 
 # ── Threshold helpers ──────────────────────────────────────────────────────────
+
+# ToDo
+# Make values "setting" variables:
+# VRAM_TH_ORA=80    # %
+# VRAM_TH_RED=95    # %
+# TEMP_TH_ORA=70    # C  -
+# TEMP_TH_RED=86    # C  - RTX4070M GPU Tc Throttling
+# POWR_TH_ORA=85    # %  - Currently W - We should use 80% of MAX
+# POWR_TH_RED=95    # %  - Currently W - We should use 90% of MAX
 
 vram_color()  { local p=$1
     [ "$p" -ge 95 ] && echo "$C_CRIT" && return     # severly affects concurrent use of graphics & AI TPS values
@@ -203,7 +215,7 @@ power_color() { local w=${1%.*}
     echo "$C_OK"; }
 gpu_color()   { local g=${1%.*}
     [ "$g" -gt 95 ] && echo "$C_CRIT" && return     # Who/what cares?
-    [ "$g" -ge 80 ] && echo "$C_WARN" && return     # Who/what cares?
+    [ "$g" -ge 85 ] && echo "$C_WARN" && return     # Who/what cares?
     echo "$C_BLUE"; }
 
 # ── Column widths ──────────────────────────────────────────────────────────────
@@ -242,7 +254,8 @@ hrow_dim() {
 print_static_frame() {
     # clear screen once (does not reset terminal/colors)
     printf "\033c"
-    printf "${C_HDR}  ⬡  GPU Monitor  ${RESET}${C_SEP}—  ${C_HDR}refresh every %ss${RESET}\n\n" "$INTERVAL"
+    printf "${C_HDR}  ⬡  GPU Monitor  ${RESET}${C_SEP}-  ${C_HDR}Refresh Rate: ~ %s s${RESET}\n\n" "$INTERVAL"
+    #printf "${C_HDR}  ⬡  GPU Monitor  ${RESET}${C_SEP}-  ${C_HDR}Peak VRAM: %s MiB${RESET}${C_SEP}-  ${C_HDR}Refresh Rate: %s s${RESET}\n\n" "$MAX_VRAM" "$INTERVAL"
     hline ┌ ┬ ┐
     hrow     "TIME"       "GPU#" "STATE"  "GPU [%]"  "VRAM [MiB]"        "TEMP [°C]" "POWER [W]"
     hrow_dim "[HH:MM:SS]" ""     ""       ""          "used/total (free)" ""          "draw/max"
@@ -364,7 +377,11 @@ poll() {
         pwr_max=$(echo "$pwr_max"     | xargs)
 
         local time_only; time_only=$(echo "$ts" | grep -oP '\d{2}:\d{2}:\d{2}')
+        
         local vram=$(( mem_used + mem_res ))
+        if [ "$vram" -gt "$PEAK_VRAM" ]; then
+            PEAK_VRAM=$vram
+        fi
 
         update_row "$row_idx" "$time_only" "$idx" "$pstate" "$gpu_util" "$vram" "$mem_total" "$mem_free" "$temp" "$pwr" "$pwr_max"
         row_idx=$(( row_idx + 1 ))

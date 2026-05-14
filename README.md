@@ -21,8 +21,8 @@ A bash-based prettifier wrapper for `nvidia-smi`.
 
 ```yaml
 Author        : eabase
-Date          : 2026-05-12
-Version       : 1.0.5
+Date          : 2026-05-14
+Version       : 1.0.6
 Repo          : https://github.com/eabase/gpu-watch
 ```
 
