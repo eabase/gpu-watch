@@ -2,8 +2,8 @@
 # gpu-watch.sh — A prettyfied nvidia-smi GPU monitor in bash
 #------------------------------------------------------------------------------
 # Author	: eabase
-# Date		: 2026-05-14
-# Version	: 1.0.6
+# Date		: 2026-05-15
+# Version	: 1.0.7
 # Repo 		: https://github.com/eabase/gpu-watch
 #
 #------------------------------------------------------------------------------

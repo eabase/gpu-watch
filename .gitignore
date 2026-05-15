@@ -15,10 +15,8 @@ pr_gpuwatch.code-workspace
 # venv (python)
 #----------------------------
 # When using venv's for:
-# 
+# nvitop, 
 #----------------------------
-
-
 venv/
 
 
@@ -28,6 +26,7 @@ venv/
 llamacli-help.txt
 llamaserver-help.txt
 
+TT.txt
 
 #----------------------------
 # Felix Hauri Bash files

@@ -5,7 +5,7 @@
 
 [![Stars](https://img.shields.io/github/stars/eabase/gpu-watch?style=flat-square&color=yellow)](https://github.com/eabase/gpu-watch/stargazers)
 [![License](https://img.shields.io/github/license/eabase/gpu-watch?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.5-blue?style=flat-square)](https://github.com/eabase/gpu-watch/releases)
+[![Version](https://img.shields.io/badge/version-1.0.7-blue?style=flat-square)](https://github.com/eabase/gpu-watch/releases)
 [![Shell](https://img.shields.io/badge/shell-bash-89E051?style=flat-square&logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20(MSYS2)-lightgrey?style=flat-square)](https://www.msys2.org/)
 [![NVIDIA](https://img.shields.io/badge/NVIDIA-nvidia--smi-76b900?style=flat-square&logo=nvidia&logoColor=white)](https://developer.nvidia.com/nvidia-system-management-interface)
@@ -21,8 +21,8 @@ A bash-based prettifier wrapper for `nvidia-smi`.
 
 ```yaml
 Author        : eabase
-Date          : 2026-05-14
-Version       : 1.0.6
+Date          : 2026-05-15
+Version       : 1.0.7
 Repo          : https://github.com/eabase/gpu-watch
 ```
 
@@ -138,6 +138,23 @@ Here are the screenshots!
 - Working OOB with **NVIDIA GeForce RTX 4070 Mobile** (and **RTX 4060 Mobile**.)
 
 
+#### Included Utilities
+
+- `pretty-help-llama.sh` a script to parse all `llama-*.exe --help` output,  
+  into a readable and almost pleasant form. It also have an environment  
+  variable *export* function that will dump all the *in-help-text* embedded  
+  environment variables. 
+
+<details>
+<summary>Screenshot Here</summary>
+
+<sub>output from `pretty-help-llama.sh llama-cli`<sub>  
+![pretty-help-llama.sh](assets/pretty-help-llama.png)
+
+</details>
+
+</br>
+
 
 #### :computer: Portability
 
@@ -194,6 +211,9 @@ There are some projects to try to get better access to nVidia VRAM paramaters an
 the CPU offloading stats. These include *VRAM hotspot temperature*,  
 *VRAM temperature, CPU offload RAM usage*.
 
+
+
+
 Check out: 
 - [GDDR6](https://github.com/olealgoritme/gddr6) (Requires access to '/dev/mem', so doesn't work on Windows.)
 etc.
@@ -247,16 +267,14 @@ For the `RTX 4070 Mobile` we have the following *thermal notes*:
 - *Hotspot* temperatures are not measured by *nvidia-smi*, but by other OS hardware layers.  
   (Check projects like [*LibreHardwareMonitor*](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor), and others.)
 
-
 ---
-
 
 **Q:** *What is **`gpu-watch`** and what does it do?*
 
 - Wraps the default installed `nvidia-smi` monitoring tool in bash script that basically scrapes the output.
 - Checks internal GPU settings.
-- Continually reads a number of the most AI relevant GPU status variables and displays it in your color terminal.
-- Keeps it simple and relevant: *VRAM, GPU temperature, GPU state, GPU utilisation, Power use* - What else do you need?
+- Continually reads the most AI relevant GPU status variables and displays it in your color terminal.
+- Keeps it simple and relevant: *VRAM, GPU temperature, GPU state, GPU utilisation, Power use*
 - Show VRAM *peak* values (within a specified time period, **TBA**).
 
 
@@ -321,10 +339,10 @@ Really nothing to do.
 | Project                                                | Description                                    |
 |--------------------------------------------------------|------------------------------------------------|
 | [all-smi](https://github.com/lablup/all-smi)           | Super nice *Rust* replacement for `nvidia-smi` |
-| [nvitop](https://github.com/XuehaiPan/nvitop)          | Super nice *Python* using the nvidia API       |
-| [glances](https://nicolargo.github.io/glances)         | Super nice *Rust* replacement for `nvidia-smi` |
+| [nvitop](https://github.com/XuehaiPan/nvitop)          | Super nice *Python* app using the nvidia API   |
+| [glances](https://nicolargo.github.io/glances)         | Another nice *Python* based GPU monitor        |
 | [nvtop](https://github.com/Syllo/nvtop)                | The classic *C* based top tool                 |
-| *(yours here)*                                         | Know of a bash alternative`*`? Let me know.    |
+| *(add yours here)*                                     | Know of a bash alternative`*`? Let me know.    |
 
 
 **Recommeded Projects**
@@ -349,7 +367,7 @@ https://github.com/olealgoritme/gddr6				# Nvidia - C (VRAM Temperature)
 
 
 
-#### 🐛 Issues & Contributing
+#### 🐛 Issues & Contribution
 
 Found a bug or want to add support for your GPU?
 

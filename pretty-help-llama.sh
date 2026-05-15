@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # pretty-help-llama.sh - A bash script to parse and colorise the help output from llama-*.exe
 #
-#
 # author	: eabase
-# version	: 1.0.0
+# version	: 1.0.7
 # date      : 2026-05-15
-# repo url  : 
+# repo url  : https://github.com/eabase/gpu-watch
 #
 #------------------------------------------------------------------------------
 #
@@ -42,14 +41,6 @@
 # Let's fix the help UX, by adding color to the output:
 #------------------------------------------------------
 # llama-cli.exe --help
-#										# cat /c/mybin/cygbin/color_names.sh
-# --<option>		# Dark Yellow		# printf "\e[0;33mDarkYellow\n"
-# -<option>			# Magenta			# printf "\e[1;35mbold Purple\n"
-# [ENVIRON_VAR]		# Cyan 				# printf "\e[1;36mbold Cyan\n"
-# default:			# Blue				# printf "\e[1;34mbold Blue\n"
-# 'single-quoted'	# Green				# printf "\e[1;32mbold Green\n"
-#					# White				# printf "\e[1;37mbold White\n"
-#------------------------------------------------------
 #
 # -single-dash-option  			# color-1
 # --double-dash-option 			# color-2
@@ -58,17 +49,19 @@
 # default: variable				# color-5
 # <option-value-N>				# color-6
 # ----- section header -----  	# color-7
-#
 #------------------------------------------------------
 
+# Enable alias expansion (for using alias inside functions)
+shopt -s expand_aliases
 
-#--------------------------------------
-# Helper Functions
-#--------------------------------------
+
+#------------------------------------------------------
+# Helper Functions - Color
+#------------------------------------------------------
 
 #----------------------------
 # ANSI Color Code variables
-#----------------------------
+##----------------------------
 # see [1] and:
 #   gpu-watch.sh
 #   /c/mybin/cygbin/color_names.sh
@@ -101,9 +94,6 @@
 # CR_256='\e[38;5;100m'          # '\e[38;5;Nm'      -- where N = (0-255)
 # CR_RGB='\e[38;2;255,0,0m'      # '\e[38;2;R;G;Bm'  -- where we used "Red = (R,G,B) = (255,0,0)"
 
-#----------------------------
-
-
 # Test GREP colors with:
 #cat TT.txt | GREP_COLOR='1;36' grep --color=always -E "speculative"        # Bright Cyan
 #cat TT.txt | GREP_COLOR='1;37;41' grep --color=always -E "speculative"     # 
@@ -130,6 +120,8 @@ headline () {
 	echo
 }
 
+# We have to export headline(), as it will be used in a subshell in replace_headers().
+export -f headline
 
 help () {
 	echo
@@ -172,38 +164,32 @@ END_OF_HELP
 
 
 #--------------------------------------
-# Old Test (not working) because of color code.
+# Alias - Grep Color
+#--------------------------------------
+# TIPS:
+# - Convert into functions for readability!
+# - Perl RegEx (-P) extensions doesn't seem to work 
+#   when used in an grep alias!
+#
+# NOTES
+#
+# To get content of "(env: AAAAA)"
+# | grep --color=always -P '\(env:\s*\K[^)]+(?=\))|$'
+#
+# To get content of "(default: AAAAA)" (multi-line compatible)
+# | grep --color=always -Pz '(?s)\(default:\s*\K[^)]+|$'
+#
+# -- WEIRD --
+# This works
+# cat llamacli-help.txt | grep --color=always -Pz '(?s)\(default:\s*\K[^)]+|$'
+# But using it in an alias fails!
+#
+# To get content of "('single-quoted')"
+# ToDo: Not yet solved - unknown issue
 #--------------------------------------
 
-#	GREP_COLOR='\''32'\'' grep --color=always -E '\''^[ ]*git [a-zA-Z][a-zA-Z\-]+|$'\'' |
-#	GREP_COLOR='\''33'\'' grep --color=always -E '\''\-\-[a-zA-Z][a-zA-Z\-]+[ =]*|$'\'' |	# -- 		Dark Yellow
-#	GREP_COLOR='\''35'\'' grep --color=always -E '\''[ ^]\-[a-zA-Z]+|$'\'' |                # - 		Magenta
-#	GREP_COLOR='\''36'\'' grep --color=always -E '\''[ ]+\(env: [A-Z_]*\)|$'\'' |           # [A-Z_]	Cyan
-#	GREP_COLOR='\''1;34'\'' grep --color=always -E '\''\(default\: .+\)|$'\'' |             # default:	Blue
-#	GREP_COLOR='\''1;32'\'' grep --color=always -E '\''\'[a-z]+[\-a-z]+\'.+|$'\'' '         # 'sin-gle'	Green
-
-
-#--------------------------------------
-# Working CLI Solutions
-#--------------------------------------
-
-#alias llamacol='GREP_COLOR='\''33'\'' grep --color=always -E '\''\-\-[a-zA-Z][a-zA-Z\-]+[ =]*|$'\'' | GREP_COLOR='\''35'\'' grep --color=always -E '\''[ ^]\-[a-zA-Z]+|$'\'' | GREP_COLOR='\''36'\'' grep --color=always -E '\''[ ]+\(env: [A-Z_]*\)|$'\'' | GREP_COLOR='\''31'\'' grep --color=always -E '\''\(default\: .+\)|$'\'' '
-#llama-cli.exe --help | llamacol | GREP_COLOR='32' grep --color=always -P "\'[a-z]+[\-]*[a-z]+\'|$" |  GREP_COLOR='35' grep --color=always -E "^-[a-zA-Z]+|$"
-
-#--------------------------------------
-# Breakdown
-#--------------------------------------
-#alias llamacol='
-#GREP_COLOR='\''33'\'' grep --color=always -E '\''\-\-[a-zA-Z][a-zA-Z\-]+[ =]*|$'\'' | 
-#GREP_COLOR='\''35'\'' grep --color=always -E '\''[ ^]\-[a-zA-Z]+|$'\'' | 
-#GREP_COLOR='\''36'\'' grep --color=always -E '\''[ ]+\(env: [A-Z_]*\)|$'\'' | 
-#GREP_COLOR='\''31'\'' grep --color=always -E '\''\(default\: .+\)|$'\'' ' | 		# <-- Note end single quote !
-#GREP_COLOR='32' grep --color=always -P "\'[a-z]+[\-]*[a-z]+\'|$" | 
-#GREP_COLOR='35' grep --color=always -E "^-[a-zA-Z]+|$"
-
-
-# Enable alias expansion (for use inside functions)
-shopt -s expand_aliases
+# Is this a good idea?
+# export GREP_OPTIONS='--color=always'
 
 alias GC1='GREP_COLOR='\''33'\'' grep --color=always -E '\''\-\-[a-zA-Z][a-zA-Z0-9\-]+[ =]*|$'\'' '	# double dash options 	: "--some-option-123"
 alias GC2='GREP_COLOR='\''1;36'\'' grep --color=always -E '\''[ ^]\-[a-zA-Z\-]+|$'\'' '				# single dash options 	: "-some-option" (any place)
@@ -211,16 +197,10 @@ alias GC2='GREP_COLOR='\''1;36'\'' grep --color=always -E '\''[ ^]\-[a-zA-Z\-]+|
 #alias GC3='GREP_COLOR='\''36'\'' grep --color=always -E '\''[ ]+\(env: [A-Z_]*\)|$'\'' '			# environment vaiable 	: "(env: ENVIRONMENT_VAR)"
 alias GC3='GREP_COLOR='\''36'\'' grep --color=always -P '\''\(env:\s*\K[^)]+(?=\))|$'\'' '			# environment vaiable 	: "(env: ENVIRONMENT_VAR)"
 
-
-# This is not working well...
-#alias GC4='GREP_COLOR='\''31'\'' grep --color=always -E '\''\(default\: .+\)|$'\'' '				# deafult values      	: "(default: value)"
-#alias GC4='GREP_COLOR='\''31'\'' grep --color=always -Pz '\''(?s)\(default:\s*\K[^\)]+|$'\'' '		# deafult values      	: "(default: value)"
-# ... so we use a function:
 perl_grep_def () {
-	GREP_COLOR='1;31' grep -P '(?s)\(default:\s*\K[^)]+|$' --color=always
+	GREP_COLOR='1;31' grep -P '(?s)\(default:\s*\K[^)]+|$' --color=always		                    # deafult values      	: "(default: value)"
 }
 alias GC4='perl_grep_def'
-
 
 alias GC5="GREP_COLOR='1;32' grep --color=always -P \"\'[a-z]+[\-]*[a-z]+\'|$\" "					# single-quoted string	: "'single-quoted'"
 alias GC6='GREP_COLOR='\''1;36'\'' grep --color=always -E '\''^-[a-zA-Z]+|$'\'' '					# single-dash ooptions-2: "-some-option" (beginning of line)
@@ -237,14 +217,9 @@ alias GC6='GREP_COLOR='\''1;36'\'' grep --color=always -E '\''^-[a-zA-Z]+|$'\'' 
 #}
 #alias GC7='perl_grep_arg'
 
-
-# We have to export headline, as it will be used in a subshell in replace_headers().
-export -f headline
-
-#replace_headers2() {
-#    awk '/^-{5} .* -{5}$/ { gsub(/^-{5} | -{5}$/, ""); system("bash -c '\''headline \"" $0 "\"'\''"); next } { print }'
-#}
-
+#--------------------------------------
+# Create Colored Section Headers
+#--------------------------------------
 replace_headers() {
     awk '/^-{5} .* -{5}$/ {
         gsub(/^-{5} | -{5}$/, "")
@@ -256,12 +231,13 @@ replace_headers() {
 
 alias GC8='replace_headers'
 
+#-------------------------------------------------------------
 # Finally we try to highlight some common option *values* 
 # that are hard to grep more generically, such as:
 #   N, <xxxx>, [xxx,yyy], {aaa, bbb, ccc, ... }
 #   
 # Using color: Bright Blue? 1;34
-
+#-------------------------------------------------------------
 fGC9() {
     GREP_COLOR='1;34' grep --color=always -E " [M|N] |$"            |   # " N "
     #GREP_COLOR='1;34' grep --color=always -E "\s{1,}[M|N]\s{1,}|$" |   # " N "
@@ -274,38 +250,20 @@ fGC9() {
 alias GC9='fGC9'
 
 
-#alias GALL='GC1 | GC2 | GC3 | GC4 | GC5 | GC6'
-##alias GALL='GC1 | GC2 | GC3 | GC4 | GC5 | GC6 | GC7'
-#alias GALL='GC1 | GC2 | GC3 | GC4 | GC5 | GC6 | GC8'
-
+#--------------------------------------
+# Putting it together...
 #--------------------------------------
 # Q: Why do we need to parse early?
 # A: Because the remaining lines gets confused by the injected ANSI color codes.
 #   - We have to parse the headers (GC8) early      - little risk of confusion
 #   - We have to parse the "common options" early   - some risk for confusion
 #--------------------------------------
-#alias GALL='GC8 | GC1 | GC2 | GC3 | GC4 | GC5 | GC6'
-#alias GALL='GC8 | GC1 | GC2 | GC3 | GC4 | GC5 | GC6 | GC9'
 alias GALL='GC8 | GC9 | GC1 | GC2 | GC3 | GC4 | GC5 | GC6'
 
-#--------------------------------------
-# NOTES
-#--------------------------------------
-# To get content of "(env: AAAAA)"
-# | grep --color=always -P '\(env:\s*\K[^)]+(?=\))|$'
 
-# To get content of "(default: AAAAA)" (multi-line compatible)
-# | grep -Pz '(?s)\(default:\s*\K[^)]+|$' --color=always
-
-# -- WEIRD --
-# This works
-# cat llamacli-help.txt | grep -Pz '(?s)\(default:\s*\K[^)]+|$' --color=always
-# But using it in an alias fails!
-
-# To get content of "('single-quoted')"
-# ToDo: Not yet solved - unknown issue
-#--------------------------------------
-
+#------------------------------------------------------
+# Helper Functions - commands
+#------------------------------------------------------
 
 dump_embedded_env_vars() {
     local LLAMA_EXE=$1
@@ -340,7 +298,6 @@ parse_options() {
         echo
         headline "Parsing Generic Help from pipe"
         echo
-        #llama-cli.exe --help 2>/dev/null | GALL
         cat | GALL
     else
         $LLAMA_EXE --help 2>/dev/null | GALL
@@ -359,7 +316,6 @@ main () {
 	exit 0
 }
 
-#main "llama-cli"
 main "$@"
 
 #------------------------------------------------------------------------------
