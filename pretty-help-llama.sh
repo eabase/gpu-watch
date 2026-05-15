@@ -35,7 +35,7 @@
 # References:
 #
 #   [1] https://askubuntu.com/questions/1042234/modifying-the-color-of-grep
-# 
+#
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------
@@ -69,14 +69,26 @@
 #----------------------------
 # ANSI Color Code variables
 #----------------------------
-# TBA
-# see: gpu-watch
-# /c/mybin/cygbin/color_names.sh
-
+# see [1] and:
+#   gpu-watch.sh
+#   /c/mybin/cygbin/color_names.sh
+#----------------------------
 # ANSI Control Codes
-# CRST='\e[0m'
+# CRST='\e[0m'  # ANSI RESET
+# PFX='\e['     # ANSI *prefix*
 
-# CB_BLK='1;30'	# Bright Black -- Gray
+# Dark
+# CD_BLK='0;30'	# Black
+# CD_RED='0;31'	# Dark Red
+# CD_GRN='0;32'	# Dark Green
+# CD_YEL='0;33'	# Dark Yellow
+# CD_BLU='0;34'	# Dark Blue
+# CD_MAG='0;35'	# Dark Magenta
+# CD_CYA='0;36'	# Dark Cyan
+# CD_WHT='0;37'	# Dark White
+
+# Bright
+# CB_BLK='1;30'	# Bright Black --> Gray
 # CB_RED='1;31'	# Bright Red
 # CB_GRN='1;32'	# Bright Green
 # CB_YEL='1;33'	# Bright Yellow
@@ -85,21 +97,16 @@
 # CB_CYA='1;36'	# Bright Cyan
 # CB_WHT='1;37'	# Bright White
 
+# RGB (TBA) Examples:
+# CR_256='\e[38;5;100m'          # '\e[38;5;Nm'      -- where N = (0-255)
+# CR_RGB='\e[38;2;255,0,0m'      # '\e[38;2;R;G;Bm'  -- where we used "Red = (R,G,B) = (255,0,0)"
 
-# CD_BLK='1;0'	# Black
-# CD_RED='1;31'	# Bright Red
-# CD_GRN='1;32'	# Bright Green
-# CD_YEL='1;33'	# Bright Yellow
-# CD_BLU='1;34'	# Bright Blue
-# CD_MAG='1;35'	# Bright Magenta
-# CD_CYA='1;36'	# Bright Cyan
-# CD_WHT='1;37'	# Bright White
+#----------------------------
 
 
 # Test GREP colors with:
-#cat TT.txt | GREP_COLOR='1;36' grep --color=always -E "speculative"
-#cat TT.txt | GREP_COLOR='1;37;41' grep --color=always -E "speculative"
-
+#cat TT.txt | GREP_COLOR='1;36' grep --color=always -E "speculative"        # Bright Cyan
+#cat TT.txt | GREP_COLOR='1;37;41' grep --color=always -E "speculative"     # 
 
 #----------------------------
 # Box Drawing Characters
@@ -115,11 +122,9 @@
 # Print a Head Line <text> enclosed by 2 lines top & bottom
 # headline () { local TT=$1; printf '\U2500%.0s' $(seq ${#TT}); echo -e "\n$TT"; printf '\U2500%.0s' $(seq ${#TT}); }
 headline () {
-    local TT=$1
+    local TT=" $1 "
     printf '\U2500%.0s' $(seq ${#TT})
-	# No color
-    #echo -e "\n$TT"
-	# colorize
+	# colorize header:
     echo -e "\n\e[1;33m${TT}\e[0m"
     printf '\U2500%.0s' $(seq ${#TT})
 	echo
@@ -133,36 +138,36 @@ help () {
 
   **** WIP ****
   ----------------------------------------------------
-  NOTE 
+  NOTE
     This is work in progress, not all options have
     been implemented, or doesn't work as expected.
   ----------------------------------------------------
 
   Description:
- 
+
     pretty-help-llama is a bash script that use grep with customized
     ANSI coloring codes, for specific items in the output of '--help'
     option to several llama.cpp executables, but mainly for 'llama-cli'
     and 'llama-server'. (There are dozens more.)
- 
+
   Usage:
- 
+
     pretty-help-llama -h                        # Show options help, and available llama binaries
     pretty-help-llama <binary-alias>            # llama binary alias:  [cli, server, vulcan, ...]
     <any-binary> --help | pretty-help-llama     # pipe output from any other binary, if not from llama-*, expext issues.
- 
+
   Examples:
- 
+
     pretty-help-llama cli                       # parse 'llama-cli --help'
     pretty-help-llama server                    # parse 'llama-server --help'
     llama-cli --help | pretty-help-llama        # parse piped output from 'llama-cli --help'
- 
+
   Dependencies:
- 
+
     none
 
 END_OF_HELP
-	echo
+	echo -e "\e[0;32mok\e[0m"
 }
 
 
@@ -236,9 +241,9 @@ alias GC6='GREP_COLOR='\''1;36'\'' grep --color=always -E '\''^-[a-zA-Z]+|$'\'' 
 # We have to export headline, as it will be used in a subshell in replace_headers().
 export -f headline
 
-replace_headers2() {
-    awk '/^-{5} .* -{5}$/ { gsub(/^-{5} | -{5}$/, ""); system("bash -c '\''headline \"" $0 "\"'\''"); next } { print }'
-}
+#replace_headers2() {
+#    awk '/^-{5} .* -{5}$/ { gsub(/^-{5} | -{5}$/, ""); system("bash -c '\''headline \"" $0 "\"'\''"); next } { print }'
+#}
 
 replace_headers() {
     awk '/^-{5} .* -{5}$/ {
@@ -258,12 +263,13 @@ alias GC8='replace_headers'
 # Using color: Bright Blue? 1;34
 
 fGC9() {
-    GREP_COLOR='1;34' grep --color=always -E "\s[M|N]\s|$" |\               # " N "
-    GREP_COLOR='1;34' grep --color=always -E "\s[A-Z_]+\s|$" |\             # " SOME_VARIABLE "
-    GREP_COLOR='1;34' grep --color=always -E "\s<[^ \<\>]>\s|$" |\          # " <xxx,yyy,...> "     - WARN: Not rubust as can have spaces
-    GREP_COLOR='1;34' grep --color=always -E "\s\[[^ \[\]]\]\s|$"         # " [xxx,yyy] "         - WARN: Not rubust as can have spaces
-    #GREP_COLOR='1;34' grep --color=always -E "\sN\s|$" |\                  # " {aaa, bbb, ... } "  - WARN: Not rubust as can have spaces
-    #GREP_COLOR='1;34' grep --color=always -E "\sN\s|$" |\                  # " N "
+    GREP_COLOR='1;34' grep --color=always -E " [M|N] |$"            |   # " N "
+    #GREP_COLOR='1;34' grep --color=always -E "\s{1,}[M|N]\s{1,}|$" |   # " N "
+    GREP_COLOR='1;34' grep --color=always -E "\s[A-Z_]+\s|$"            # " SOME_VARIABLE "
+    #GREP_COLOR='1;34' grep --color=always -E "\s<[^ \<\>]>\s|$"    |   # " <xxx,yyy,...> "     - WARN: Not rubust as can have spaces
+    #GREP_COLOR='1;34' grep --color=always -E "\s\[[^ \[\]]\]\s|$"  |   # " [xxx,yyy] "         - WARN: Not rubust as can have spaces
+    #GREP_COLOR='1;34' grep --color=always -E "\sN\s|$"             |   # " {aaa, bbb, ... } "  - WARN: Not rubust as can have spaces
+    #GREP_COLOR='1;34' grep --color=always -E "\sN\s|$"                 # " N "
 }
 alias GC9='fGC9'
 
@@ -272,52 +278,72 @@ alias GC9='fGC9'
 ##alias GALL='GC1 | GC2 | GC3 | GC4 | GC5 | GC6 | GC7'
 #alias GALL='GC1 | GC2 | GC3 | GC4 | GC5 | GC6 | GC8'
 
-# We have to parse the headers (GC8) early
-alias GALL='GC8 | GC1 | GC2 | GC3 | GC4 | GC5 | GC6'
+#--------------------------------------
+# Q: Why do we need to parse early?
+# A: Because the remaining lines gets confused by the injected ANSI color codes.
+#   - We have to parse the headers (GC8) early      - little risk of confusion
+#   - We have to parse the "common options" early   - some risk for confusion
+#--------------------------------------
+#alias GALL='GC8 | GC1 | GC2 | GC3 | GC4 | GC5 | GC6'
 #alias GALL='GC8 | GC1 | GC2 | GC3 | GC4 | GC5 | GC6 | GC9'
+alias GALL='GC8 | GC9 | GC1 | GC2 | GC3 | GC4 | GC5 | GC6'
 
 #--------------------------------------
+# NOTES
 #--------------------------------------
-
 # To get content of "(env: AAAAA)"
 # | grep --color=always -P '\(env:\s*\K[^)]+(?=\))|$'
 
 # To get content of "(default: AAAAA)" (multi-line compatible)
 # | grep -Pz '(?s)\(default:\s*\K[^)]+|$' --color=always
 
-# -- WEIRD! --
+# -- WEIRD --
 # This works
 # cat llamacli-help.txt | grep -Pz '(?s)\(default:\s*\K[^)]+|$' --color=always
+# But using it in an alias fails!
 
 # To get content of "('single-quoted')"
 # ToDo: Not yet solved - unknown issue
+#--------------------------------------
 
 
+dump_embedded_env_vars() {
+    local LLAMA_EXE=$1
+    # Dump all environment variables from llama's '--help'
+    #cat llamacli-help.txt | grep -E "(env: [A-Z_]+)" | sed -e 's/(env: //i' -e 's/)//i' | tr -d "\ " | sort
+    LLAMA_EXE --help 2>/dev/null | grep -E "(env: [A-Z_]+)" | sed -e 's/(env: //i' -e 's/)//i' | tr -d "\ " | sort
+}
+
+#--------------------------------------
+# Parse CLI options
+#--------------------------------------
+# We want to use options like this:
+#   pretty-help-llama [options: -h -? -e] <binary[.exe]>
+#   ./pretty-help-llama.sh llama-cli.exe
+#   ./pretty-help-llama.sh llama-cli
+#--------------------------------------
 parse_options() {
+
+    local LLAMA_EXE=$1      # The selected llama binary (llama-*.exe)
+
     # Handle options
     while getopts "he" opt; do
         case $opt in
-            e) EFLAG=1 ;;
-            h) help; exit 0 ;;
-            ?) help; exit 1 ;;
+            e) dump_embedded_env_vars "$LLAMA_EXE"; exit 0 ;;  # Dump the text embedded environment variables '(env: XXX)'' from selected LLAMA_EXE --help ouput
+            h) help; exit 0 ;;      # '-h'
+            ?) help; exit 1 ;;      # Error
         esac
     done
 
     # Read piped input from stdin
     if [ -p /dev/stdin ]; then
-        if [ "$EFLAG" = "1" ]; then
-            # Dump all environment variables from llama's '--help'
-            cat llamacli-help.txt | grep -E "(env: [A-Z_]+)" | sed -e 's/(env: //i' -e 's/)//i' | tr -d "\ " | sort
-        else
-            echo
-	        headline "Parsing Help from $TIT"
-	        echo
-            
-            llama-cli.exe --help | GALL
-            #cat  # just pass through if no option given
-        fi
+        echo
+        headline "Parsing Generic Help from pipe"
+        echo
+        #llama-cli.exe --help 2>/dev/null | GALL
+        cat | GALL
     else
-        help
+        $LLAMA_EXE --help 2>/dev/null | GALL
     fi
 }
 
@@ -326,25 +352,15 @@ parse_options() {
 #--------------------------------------
 
 main () {
-	local TIT=$1
-
-	echo
-	headline "Parsing Help from $TIT"
-	echo
-
+	local TIT=$1            # "LLAMA_EXE" - The selected binary (*.exe)
     parse_options $TIT
 
-	#llama-cli.exe --help | GALL
-	#llama-cli.exe --help | GC8
-
-	echo -e "\nok\n"
+    echo -e "\n\e[0;32mok\e[0m\n"
 	exit 0
 }
 
-#help
 #main "llama-cli"
 main "$@"
-
 
 #------------------------------------------------------------------------------
 #  END

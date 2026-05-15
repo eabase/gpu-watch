@@ -1,5 +1,5 @@
 <!-- markdownlint-disable MD009 MD012 MD026 MD033 MD034 MD041 MD042 -->
-<!-- markdownlint-disable MD036 MD032 -->
+<!-- markdownlint-disable MD036 MD032 MD060 -->
 
 ### gpu-watch - *A bashingly pretty nvidia-smi monitor*
 
@@ -135,7 +135,7 @@ Here are the screenshots!
 - **Animated VRAM progress bar** using pure ANSI/Unicode block characters
 - **Zero external dependencies** - only native bash and ANSI escape codes
 - **Configurable polling interval** (default: 2 seconds)
-- Wokring OOB with **NVIDIA GeForce RTX 4070 Mobile** (and **RTX 4060 Mobile**.)
+- Working OOB with **NVIDIA GeForce RTX 4070 Mobile** (and **RTX 4060 Mobile**.)
 
 
 
@@ -185,6 +185,24 @@ Script can certainly be improved to automatically get these.
 <sub>`*` Change to `GiB` for cards with VRAM > 24 GB </sub>
 
 
+<details>
+<summary>Click here for More Technical Info</summary>
+
+### Technical Info
+
+There are some projects to try to get better access to nVidia VRAM paramaters and  
+the CPU offloading stats. These include *VRAM hotspot temperature*,  
+*VRAM temperature, CPU offload RAM usage*.
+
+Check out: 
+- [GDDR6](https://github.com/olealgoritme/gddr6) (Requires access to '/dev/mem', so doesn't work on Windows.)
+etc.
+
+Also ChatGPT suggested to try to make a device driver similar to `/dev/mem` but for windows.
+
+
+#### Some Available Metrics
+
 To see all queryable GPU metrics:
 
 ```bash
@@ -195,7 +213,6 @@ nvidia-smi --help-query-gpu | grep --color=always -iE '^".+$|$' -A5
 # - No spaces are allowed between items in the list!
 nvidia-smi --query-gpu=timestamp,index,utilization.gpu,memory.used,memory.reserved,memory.total,memory.free,temperature.gpu,power.draw,power.max_limit,c2c.mode,mig.mode.pending,compute_mode,pstate,kmd_version,serial,persistence_mode,addressing_mode,accounting.mode,inforom.img,vbios_version
 ```
-
 
 
 #### :bar_chart: RAM Progress Bar
@@ -214,6 +231,12 @@ p=47; percentBar2 "$p" 27 bar; printf '\U2595\e[0;32m\e[48;5;235m%s\e[0m\U258f%6
 > and the amazing [bash-script collection](https://f-hauri.ch/vrac/) by [Felix Hauri](http://127.0.0.1/), and various *StackOverflow* answers like [this](https://stackoverflow.com/a/79312138/).
 
 
+</details>
+
+</br>
+
+---
+
 
 #### Thermal Notes
 
@@ -225,7 +248,6 @@ For the `RTX 4070 Mobile` we have the following *thermal notes*:
   (Check projects like [*LibreHardwareMonitor*](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor), and others.)
 
 
-
 ---
 
 
@@ -234,8 +256,8 @@ For the `RTX 4070 Mobile` we have the following *thermal notes*:
 - Wraps the default installed `nvidia-smi` monitoring tool in bash script that basically scrapes the output.
 - Checks internal GPU settings.
 - Continually reads a number of the most AI relevant GPU status variables and displays it in your color terminal.
-- Keeps shit simple and to the point: *VRAM, Temperature, Power Use, GPU state, GPU utilisation* - What else do you need?
-- Show Max values within a specified time period. (*TBA*)
+- Keeps it simple and relevant: *VRAM, GPU temperature, GPU state, GPU utilisation, Power use* - What else do you need?
+- Show VRAM *peak* values (within a specified time period, **TBA**).
 
 
 **Q:** *What does it **not** do?*
@@ -245,54 +267,86 @@ For the `RTX 4070 Mobile` we have the following *thermal notes*:
 - Does not provide any reliability on broken (non-ANSI supported) terminals on obscure linux distributions.
 - Does not (yet) have a listener for live GPU status feeds. (*TBA*)
 
+More seriously:
+
+- Does not (yet) show VRAM temperatures.
+- Does not (yet) show VRAM *HotSpot* temperatures.
+- Does not (yet) show CPU RAM *offload*.
+
 
 **Q:** *What other limitations does it have?*
 
-<sub>:red_circle:</sub> Nobody really care about this. So if you even find this project, I might buy you a beer one day.
-
+:green_circle: None.  
+:red_circle: Nobody really care about this, so surely something!
 
 
 **Q:** *Why is this needed?*
+
+For a minimalist GPU quick check, that is compatible without any  
+other installations whatsoever, this is it!
 
 It probably isn't if you are already happy to use, the ugly AF `nvidia-smi` tool,  
 or the extremely bloated but fully featured `all-smi` Rust port,  
 or just happy with linux `nvtop`.
 
-For a minimalist GPU quick check, that is compatible without any  
-other installations whatsoever, this is it!
-
 
 **Q:** *Will I support this tool?*
 
 Sure if it is broken, but I will not spend too much time on *new* features,  
-as there are several incrediuble (but substantially more heavy) alternatives.
+as there are several incredible (but substantially more heavy) alternatives.  
+And you can always ask your AI agent to whip one up just for you!
+
 
 ---
 
 ### Dependencies
 
-- `nvidia-smi` (comes with your nVIDIA driver install)
 - Any **Bash**!
+- `nvidia-smi` (comes with your Nvidia driver install)
 
 
 ### Installation  
 
 Really nothing to do.
-1. Download the script [gpu-watch.sh](), or do a `git clone`. 
+1. Download the script [gpu-watch.sh](https://github.com/eabase/gpu-watch/blob/main/gpu-watch.sh), or do a `git clone`. 
 2. Open your Bash terminal shell and run the script with `./gpu-watch.sh`.
-
 
 ---
 
 
 #### :link: Links to Similar Projects?
 
-| Project | Description |
-|---------|-------------|
-| [lablup/all-smi](https://github.com/lablup/all-smi) | Super nice *Rust* replacement for `nvidia-smi` |
-| *(yours here)*                                      | Know of a bash alternative`*`? Let me know.    |
+> Note, no other *Bash-only* alternatives have been found at the time of this writing.
 
-<sub>`*` *No bash alternatives have been found at the time of this writing.*</sub>
+| Project                                                | Description                                    |
+|--------------------------------------------------------|------------------------------------------------|
+| [all-smi](https://github.com/lablup/all-smi)           | Super nice *Rust* replacement for `nvidia-smi` |
+| [nvitop](https://github.com/XuehaiPan/nvitop)          | Super nice *Python* using the nvidia API       |
+| [glances](https://nicolargo.github.io/glances)         | Super nice *Rust* replacement for `nvidia-smi` |
+| [nvtop](https://github.com/Syllo/nvtop)                | The classic *C* based top tool                 |
+| *(yours here)*                                         | Know of a bash alternative`*`? Let me know.    |
+
+
+**Recommeded Projects**
+
+```yaml
+https://github.com/amd/amd_smi_exporter				# AMD
+https://github.com/ROCm/rocm_smi_lib				# AMD
+
+https://github.com/tiagovignatti/intel-gpu-tools	# Intel
+https://github.com/onedr0p/intel-gpu-exporter		# Intel
+
+https://github.com/eabase/gpu-watch					# Nvidia - Bash
+https://github.com/XuehaiPan/nvitop					# Nvidia - Python
+https://nicolargo.github.io/glances/				# Nvidia - Python
+https://github.com/wookayin/gpustat					# Nvidia - Python
+https://github.com/rapidsai/jupyterlab-nvdashboard	# Nvidia - Python (JupyterLab )
+https://github.com/Syllo/nvtop						# Nvidia - C
+https://github.com/aristocratos/btop				# Nvidia - C/C++
+https://github.com/utkuozdemir/nvidia_gpu_exporter	# Nvidia - Go
+https://github.com/olealgoritme/gddr6				# Nvidia - C (VRAM Temperature)
+```
+
 
 
 #### 🐛 Issues & Contributing
@@ -312,8 +366,7 @@ Find **all** available and sorted emoji's here:
 
 #### No Stars For Funny Bars :sob:
 
+Or maybe I'm just on [anther planet](https://starmapper.bruniaux.com/eabase/gpu-watch)...
+
 [![Star History Chart](https://api.star-history.com/chart?repos=eabase/gpu-watch&type=date&legend=top-left)](https://www.star-history.com/?repos=eabase%2Fgpu-watch&type=date&legend=top-left)
-
-
-Or maybe I'm just on the [wrong planet](https://starmapper.bruniaux.com/eabase/gpu-watch)...
 
